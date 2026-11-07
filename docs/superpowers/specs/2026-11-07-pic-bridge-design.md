@@ -179,8 +179,16 @@ Skipped files count in the summary. Matching is across all folders, so
 re-running the same card under a different folder name also skips.
 Known ceiling: if a card reader shifts modified times (exFAT time-zone
 handling), files look new and get copied again — duplicates, not loss.
+A video and its sidecar go together: if the video was imported, its sidecar
+is skipped too; a video not yet imported is always copied.
 
 ## Copy and verify
+
+A group (a RAW+JPEG pair, a video and its sidecar, or a single file) is
+copied and recorded as one unit: every member goes through steps 1–4, and
+only when all are in place are their manifest entries appended, in one
+write. If any member fails, the group is not recorded and the next run
+copies it again (duplicates, not loss).
 
 Per file:
 
@@ -189,9 +197,9 @@ Per file:
 3. fsync, then re-read the temp file from the destination disk and hash it.
 4. Hashes match → move temp to final name without ever replacing an existing
    file (plain `os.Rename` overwrites on macOS; use `os.Link` + remove temp,
-   which fails if the target exists). Preserve source modified time,
-   then append the manifest entry. Mismatch or any error → delete temp,
-   record failure, continue with other files.
+   which fails if the target exists). Preserve source modified time.
+   Mismatch or any error → delete temp, record failure (for the whole
+   group), continue with other groups.
 
 Ctrl-C: stop handing out new files, let in-flight copies finish or clean up
 their temp files, flush manifest, print summary.

@@ -172,3 +172,19 @@ func TestManifestNameUsesLocalTime(t *testing.T) {
 		t.Errorf("name = %s, want %s", filepath.Base(m.Path()), want)
 	}
 }
+
+func TestManifestAppendGroup(t *testing.T) {
+	dir := t.TempDir()
+	m := newManifest(t, dir)
+	if err := m.Append(entry("PRIVATE/M4ROOT/CLIP/C0001.MP4", 100), entry("PRIVATE/M4ROOT/CLIP/C0001M01.XML", 5)); err != nil {
+		t.Fatal(err)
+	}
+	m.Close()
+	if got, _ := LoadImported(dir); len(got) != 2 {
+		t.Errorf("got %v, want both group entries", got)
+	}
+	data, _ := os.ReadFile(m.Path())
+	if n := strings.Count(string(data), "---\nkind: file\n"); n != 2 {
+		t.Errorf("%d file docs, want 2", n)
+	}
+}

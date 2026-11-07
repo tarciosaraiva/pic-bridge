@@ -100,12 +100,17 @@ func CreateManifest(dir string, h RunHeader) (*Manifest, error) {
 // Path is the manifest file's path.
 func (m *Manifest) Path() string { return m.f.Name() }
 
-// Append records a file. Call it only after the copy is verified and in place
-// at its final name: LoadImported treats every entry as imported, and re-runs
-// (and the future card wipe) skip those files. Safe for concurrent use.
-func (m *Manifest) Append(e FileEntry) error {
-	e.Kind = "file"
-	return m.write(e)
+// Append records a group of files in one write + fsync. Call it only after
+// every copy is verified and in place at its final name: LoadImported treats
+// every entry as imported, and re-runs (and the future card wipe) skip those
+// files. Safe for concurrent use.
+func (m *Manifest) Append(es ...FileEntry) error {
+	docs := make([]any, len(es))
+	for i, e := range es {
+		e.Kind = "file"
+		docs[i] = e
+	}
+	return m.write(docs...)
 }
 
 // Finish appends the summary document and closes the manifest.
@@ -125,14 +130,18 @@ func (m *Manifest) Close() error {
 	return m.f.Close()
 }
 
-func (m *Manifest) write(v any) error {
-	b, err := yaml.Marshal(v)
-	if err != nil {
-		return err
+func (m *Manifest) write(vs ...any) error {
+	var buf []byte
+	for _, v := range vs {
+		b, err := yaml.Marshal(v)
+		if err != nil {
+			return err
+		}
+		buf = append(append(buf, "---\n"...), b...)
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if _, err := m.f.Write(append([]byte("---\n"), b...)); err != nil {
+	if _, err := m.f.Write(buf); err != nil {
 		return err
 	}
 	return m.f.Sync()
