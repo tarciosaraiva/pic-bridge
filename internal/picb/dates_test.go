@@ -3,11 +3,15 @@ package picb
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/evanoberholster/imagemeta/meta/exif"
 )
 
 func box(typ string, payload ...[]byte) []byte {
@@ -164,5 +168,30 @@ func TestWithFileRecoversPanic(t *testing.T) {
 	_, err := withFile(p, func(*os.File) (time.Time, error) { panic("decoder bug") })
 	if err == nil {
 		t.Fatal("want error from recovered panic")
+	}
+}
+
+// Some A7 V ARWs: imagemeta parses DateTimeOriginal, then returns io.EOF.
+func TestExifDateKeepsDateDecodedBeforeEOF(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "DSC00305.ARW")
+	os.WriteFile(p, []byte("x"), 0o644)
+	want := time.Date(2026, 11, 7, 8, 45, 26, 0, time.FixedZone("", 11*3600))
+	orig := decodeExif
+	t.Cleanup(func() { decodeExif = orig })
+	for _, decErr := range []error{io.EOF, io.ErrUnexpectedEOF, errors.New("corrupt IFD")} {
+		decodeExif = func(io.ReadSeeker) (exif.Exif, error) {
+			var e exif.Exif
+			e.ExifIFD.DateTimeOriginal = want
+			e.ExifIFD.OffsetTimeOriginal = want.Location()
+			return e, decErr
+		}
+		got, err := exifDate(p)
+		if decErr == io.EOF || decErr == io.ErrUnexpectedEOF {
+			if err != nil || !got.Equal(want) {
+				t.Errorf("%v: got %v, %v; want %v", decErr, got, err, want)
+			}
+		} else if err == nil {
+			t.Errorf("%v: got %v, want error", decErr, got)
+		}
 	}
 }

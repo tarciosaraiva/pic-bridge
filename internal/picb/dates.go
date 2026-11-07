@@ -64,8 +64,10 @@ func withFile(path string, fn func(*os.File) (time.Time, error)) (t time.Time, e
 
 func exifDate(path string) (time.Time, error) {
 	return withFile(path, func(r *os.File) (time.Time, error) {
-		e, err := imagemeta.Decode(r)
-		if err != nil {
+		e, err := decodeExif(r)
+		// Some Sony ARWs hit EOF in a later IFD after DateTimeOriginal was
+		// parsed; imagemeta returns the partial Exif, so keep its date.
+		if err != nil && !(errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)) {
 			return time.Time{}, err
 		}
 		t := e.OriginalDate()
@@ -79,6 +81,9 @@ func exifDate(path string) (time.Time, error) {
 		return t, nil
 	})
 }
+
+// decodeExif is imagemeta.Decode; tests swap it.
+var decodeExif = imagemeta.Decode
 
 var mp4Epoch = time.Date(1904, 1, 1, 0, 0, 0, 0, time.UTC)
 
