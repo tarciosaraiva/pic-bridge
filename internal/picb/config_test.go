@@ -38,8 +38,8 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if cfg.SplitRawJPEG {
 		t.Error("SplitRawJPEG = true, want false")
 	}
-	if cfg.Workers != 3 {
-		t.Errorf("Workers = %d, want 3", cfg.Workers)
+	if cfg.Workers != 2 {
+		t.Errorf("Workers = %d, want 2", cfg.Workers)
 	}
 	if want := filepath.Join(home, "Pictures/Imports"); cfg.Destination != want {
 		t.Errorf("Destination = %q, want %q", cfg.Destination, want)

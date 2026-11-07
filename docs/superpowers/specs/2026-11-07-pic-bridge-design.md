@@ -208,6 +208,10 @@ Worker count: config key `workers`. Default set from a timed comparison of
 1–4 workers on the user's real card and reader (smallest count within ~5% of
 the best throughput). Adaptive worker count is deferred (#5).
 
+Measured 2026-11-07 (A7 V card, USB reader, 272 files, 11.2 GB): 1 worker
+72.6 MB/s, 2 → 93.0, 3 → 94.7, 4 → 94.8. The reader saturates at ~95 MB/s,
+so the default is **2**.
+
 ## Manifest
 
 One manifest per import run:
@@ -279,7 +283,6 @@ Checked 2026-11-07:
 ## Left to the builder
 
 - Package layout, CLI framework (stdlib `flag` preferred), progress display.
-- Exact worker count default.
 - Field-name polish in config, as long as semantics hold.
 - Error message wording.
 - Test strategy; must include a test for counter assignment (pairs, multi-day,

@@ -14,7 +14,7 @@
 
 - Module path: `github.com/tarciosaraiva/pic-bridge`; binary name `picb`; `const Version = "0.1.0"`.
 - Default config path: `$HOME/.pic-bridge/config.yaml`; override with `--config <path>`.
-- Config defaults: `source: auto`, `date_format: YYYYMMDD`, `include_time: false`, `use_exif: true`, `split_raw_jpeg: false`, `workers: 3` (provisional — final default set from the timed check in Task 7 Step 6). `destination` required.
+- Config defaults: `source: auto`, `date_format: YYYYMMDD`, `include_time: false`, `use_exif: true`, `split_raw_jpeg: false`, `workers: 2` (set from the timed check in Task 7 Step 7: 1→72.6, 2→93.0, 3→94.7, 4→94.8 MB/s). `destination` required.
 - Output layout: `<destination>/<folder>/original/` (+ `RAW/`, `JPEG/` when split; `VIDEO/` always) and empty `<destination>/<folder>/processed/`, both created at run start.
 - File name: `<date>[_<HHmmss>]_<counter>.<ext>`; counter 4-digit zero padded, `%04d`; extension keeps its original case as on the card.
 - Manifests: `<destination>/.pic-bridge/manifests/<YYYYMMDD_HHmmss>.yaml`, multi-document YAML, fsync after every document.

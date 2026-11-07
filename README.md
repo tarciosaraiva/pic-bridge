@@ -5,9 +5,10 @@ name, with date-based file names, verifying every copy and recording a manifest 
 
 Status: version 1 in progress. See [the version 1 design](docs/superpowers/specs/2026-11-07-pic-bridge-design.md).
 
-## Usage (planned)
+## Usage
 
-1. Create `~/.pic-bridge/config.yaml`:
+1. Create `~/.pic-bridge/config.yaml` (or run `picb <folder>` once and answer
+   `y` to create it with defaults):
 
    ```yaml
    destination: ~/Pictures/Imports
@@ -15,6 +16,7 @@ Status: version 1 in progress. See [the version 1 design](docs/superpowers/specs
    include_time: false
    use_exif: true
    split_raw_jpeg: false
+   workers: 2
    ```
 
 2. Insert the card and run `picb <folder-name>`, e.g. `picb wedding`

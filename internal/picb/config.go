@@ -36,7 +36,7 @@ date_format: YYYYMMDD         # default YYYYMMDD
 include_time: false           # default false; true adds _HHmmss to FILE names only
 use_exif: true                # default true; false = use file modified time
 split_raw_jpeg: false         # default false; true = RAW/ and JPEG/ subfolders
-workers: 3                    # parallel copies
+workers: 2                    # parallel copies; 2 saturated a USB card reader
 `
 
 const timeLayout = "150405"
@@ -71,7 +71,7 @@ func WriteSampleConfig(path string) error {
 
 // LoadConfig reads path, applies defaults, expands ~ and validates.
 func LoadConfig(path string) (Config, error) {
-	cfg := Config{Source: "auto", DateFormat: "YYYYMMDD", UseEXIF: true, Workers: 3}
+	cfg := Config{Source: "auto", DateFormat: "YYYYMMDD", UseEXIF: true, Workers: 2}
 	data, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		return cfg, fmt.Errorf("%w: %s", ErrNoConfig, path)
