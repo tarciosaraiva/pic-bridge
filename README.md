@@ -3,7 +3,7 @@
 `picb` imports photos and videos from a camera SD card into a folder you
 name, with date-based file names, verifying every copy and recording a manifest of what was imported.
 
-Status: design stage. See [the version 1 design](docs/superpowers/specs/2026-11-07-pic-bridge-design.md).
+Status: version 1 in progress. See [the version 1 design](docs/superpowers/specs/2026-11-07-pic-bridge-design.md).
 
 ## Usage (planned)
 
@@ -23,6 +23,16 @@ Status: design stage. See [the version 1 design](docs/superpowers/specs/2026-11-
 Result: `~/Pictures/Imports/wedding/original/20261107_0001.ARW`, videos
 under `original/VIDEO/`, an empty `wedding/processed/` for your edits, and a manifest in `~/Pictures/Imports/.pic-bridge/manifests/`.
 Re-running skips files already imported.
+
+## Build and test
+
+Needs Go 1.27+.
+
+```sh
+make build   # builds ./picb
+make test    # go vet + tests with the race detector
+make clean   # removes ./picb
+```
 
 ## Supported files
 
