@@ -2,7 +2,7 @@
 
 Date: 2026-11-07
 Command: `picb`
-Repo: https://github.com/tarciosaraiva/pic-bridge (project board #1)
+Repo: https://github.com/tarciosaraiva/pic-bridge
 
 ## Intent
 

@@ -10,7 +10,7 @@ and `docs/superpowers/specs/` for the design.
 - A file is "imported" only after its copy is verified and its manifest entry
   is written.
 - Bottleneck is card I/O, not CPU: keep the copy worker pool small.
-- Deferred features live as GitHub issues labelled `later` on project board #1.
+- Deferred features live as GitHub issues labelled `later`.
   Don't build them into version 1.
 - Prefer the Go standard library. Current deps: imagemeta (EXIF),
   go.yaml.in/yaml/v3 (config + manifest).
