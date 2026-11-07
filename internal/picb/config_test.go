@@ -180,3 +180,20 @@ func TestLoadConfigDateFormatEdges(t *testing.T) {
 		}
 	}
 }
+
+func TestWriteSampleConfig(t *testing.T) {
+	p := filepath.Join(t.TempDir(), ".pic-bridge", "config.yaml")
+	if err := WriteSampleConfig(p); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadConfig(p); err != nil {
+		t.Fatalf("sample does not load: %v", err)
+	}
+	os.WriteFile(p, []byte("destination: /mine\n"), 0o644)
+	if err := WriteSampleConfig(p); err == nil {
+		t.Error("second write succeeded; want error")
+	}
+	if got, _ := os.ReadFile(p); string(got) != "destination: /mine\n" {
+		t.Errorf("config overwritten: %q", got)
+	}
+}

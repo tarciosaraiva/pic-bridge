@@ -52,6 +52,23 @@ func DefaultConfigPath() (string, error) {
 	return filepath.Join(home, ".pic-bridge", "config.yaml"), nil
 }
 
+// WriteSampleConfig writes SampleConfig to path, creating its folder.
+// It never overwrites an existing file.
+func WriteSampleConfig(path string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	if _, err := f.WriteString(SampleConfig); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
+}
+
 // LoadConfig reads path, applies defaults, expands ~ and validates.
 func LoadConfig(path string) (Config, error) {
 	cfg := Config{Source: "auto", DateFormat: "YYYYMMDD", UseEXIF: true, Workers: 3}
