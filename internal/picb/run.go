@@ -150,8 +150,9 @@ func copyGroups(ctx context.Context, cfg Config, m *Manifest, groups [][]Item, n
 				var entries []FileEntry
 				var stats []CopyStats
 				var failErr error
+				cctx := ctx
 				for _, it := range g {
-					st, err := CopyVerify(ctx, it.Src.Abs, filepath.Join(cfg.Destination, filepath.FromSlash(it.DestRel)), it.Src.ModTime)
+					st, err := CopyVerify(cctx, it.Src.Abs, filepath.Join(cfg.Destination, filepath.FromSlash(it.DestRel)), it.Src.ModTime)
 					mu.Lock()
 					read += st.Read
 					verify += st.Verify
@@ -160,6 +161,9 @@ func copyGroups(ctx context.Context, cfg Config, m *Manifest, groups [][]Item, n
 						failErr = err
 						break
 					}
+					// Once a member is in place the group finishes even after
+					// Ctrl-C, so no unrecorded file is left in original/.
+					cctx = context.WithoutCancel(ctx)
 					stats = append(stats, st)
 					entries = append(entries, FileEntry{Source: it.Src.Rel, Size: it.Src.Size, Modified: it.Src.ModTime,
 						Destination: it.DestRel, SHA256: st.SHA256, DateSource: it.DateSource, CopiedAt: time.Now()})

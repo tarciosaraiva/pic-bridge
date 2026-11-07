@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -270,5 +271,73 @@ func TestRunMissingSource(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(cfg.Destination, "wedding")); err == nil {
 		t.Error("created folders for a run that could not start")
+	}
+}
+
+// Ctrl-C lands while a pair's RAW is being verified: the pair must finish
+// and be recorded, nothing on disk may be left unrecorded, and a resume run
+// must import the rest without duplicates.
+func TestRunCancelMidGroup(t *testing.T) {
+	cfg := runCfg(fakeCard(t, happyCard), t)
+	cfg.Workers = 1
+	ctx, cancel := context.WithCancel(context.Background())
+	orig := rehash
+	rehash = func(p string) (string, error) {
+		if strings.Contains(p, "_0002.ARW") {
+			cancel()
+		}
+		return orig(p)
+	}
+	t.Cleanup(func() { rehash = orig })
+
+	s, err := Run(ctx, cfg, "wedding", io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.Failed) != 0 || s.Copied != 3 || s.NotAttempted != 2 {
+		t.Errorf("run 1: copied %d failed %v not attempted %d; want 3, none, 2", s.Copied, s.Failed, s.NotAttempted)
+	}
+	onDisk := func() []string {
+		var fs []string
+		filepath.WalkDir(filepath.Join(cfg.Destination, "wedding", "original"), func(p string, d os.DirEntry, _ error) error {
+			if !d.IsDir() {
+				r, _ := filepath.Rel(cfg.Destination, p)
+				fs = append(fs, filepath.ToSlash(r))
+			}
+			return nil
+		})
+		slices.Sort(fs)
+		return fs
+	}
+	recorded := func() []string {
+		var fs []string
+		paths, _ := filepath.Glob(filepath.Join(cfg.Destination, ".pic-bridge", "manifests", "*.yaml"))
+		for _, p := range paths {
+			data, _ := os.ReadFile(p)
+			dec := yaml.NewDecoder(bytes.NewReader(data))
+			for {
+				var e FileEntry
+				if dec.Decode(&e) != nil {
+					break
+				}
+				if e.Kind == "file" {
+					fs = append(fs, e.Destination)
+				}
+			}
+		}
+		slices.Sort(fs)
+		return fs
+	}
+	if d, r := onDisk(), recorded(); !slices.Equal(d, r) {
+		t.Errorf("run 1: on disk %v but recorded %v", d, r)
+	}
+
+	rehash = orig
+	if s := mustRun(t, cfg); s.Copied != 2 || len(s.Failed) != 0 {
+		t.Errorf("resume: copied %d failed %v; want 2, none", s.Copied, s.Failed)
+	}
+	want := slices.Sorted(maps.Values(happyDests))
+	if d := onDisk(); !slices.Equal(d, want) {
+		t.Errorf("after resume on disk %v, want exactly %v", d, want)
 	}
 }
