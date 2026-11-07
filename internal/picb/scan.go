@@ -34,6 +34,7 @@ type SourceFile struct {
 var extClass = map[string]Class{
 	".ARW": ClassRAW, ".CR2": ClassRAW, ".CR3": ClassRAW,
 	".JPG": ClassJPEG, ".JPEG": ClassJPEG,
+	".HIF": ClassJPEG, ".HEIF": ClassJPEG, ".HEIC": ClassJPEG, // processed photos, filed with JPEG
 	".MP4": ClassVideo, ".MOV": ClassVideo,
 }
 

@@ -103,11 +103,18 @@ func Run(ctx context.Context, cfg Config, folder string, out io.Writer) (Summary
 		Timing{Phase: "plan", Seconds: planTime.Seconds(), Note: fmt.Sprintf("%d to copy, %d skipped", len(items), skipped)})
 
 	var total int64
+	photos, videos := 0, 0
 	for _, it := range items {
 		total += it.Src.Size
+		switch it.Src.Class {
+		case ClassRAW, ClassJPEG:
+			photos++
+		case ClassVideo:
+			videos++
+		}
 	}
-	fmt.Fprintf(out, "Importing %d files (%.1f MB) from %s into %s; %d already imported.\n",
-		len(items), float64(total)/1e6, src, filepath.Join(cfg.Destination, folder), skipped)
+	fmt.Fprintf(out, "Importing %s, %s (%.1f MB) from %s into %s; %d already imported.\n",
+		plural(photos, "photo"), plural(videos, "video"), float64(total)/1e6, src, filepath.Join(cfg.Destination, folder), skipped)
 
 	for _, it := range items {
 		if err := os.MkdirAll(filepath.Join(cfg.Destination, filepath.FromSlash(path.Dir(it.DestRel))), 0o755); err != nil {
@@ -229,6 +236,13 @@ func removePartials(origDir string) error {
 		}
 	}
 	return nil
+}
+
+func plural(n int, word string) string {
+	if n == 1 {
+		return "1 " + word
+	}
+	return fmt.Sprintf("%d %ss", n, word)
 }
 
 func since(t time.Time) float64 { return time.Since(t).Seconds() }

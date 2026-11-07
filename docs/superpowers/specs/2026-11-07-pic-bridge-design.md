@@ -98,12 +98,11 @@ File classes (case-insensitive extensions):
 | Class | Extensions |
 |-------|-----------|
 | RAW   | `.ARW`, `.CR2`, `.CR3` |
-| JPEG  | `.JPG`, `.JPEG` |
+| JPEG  | `.JPG`, `.JPEG`, plus HEIF `.HIF`, `.HEIF`, `.HEIC` (filed under `JPEG/`, paired with RAW like a JPEG) |
 | VIDEO | `.MP4`, `.MOV` |
 | Sidecar | `.XML` next to a video with the same base name (Sony `C0001M01.XML` ↔ `C0001.MP4`) |
 
-Anything else is ignored and listed in the end summary. (Adding HEIF/HIF is
-the builder's call if trivial.)
+Anything else is ignored and listed in the end summary.
 
 ## Capture date
 

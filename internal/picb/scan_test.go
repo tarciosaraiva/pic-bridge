@@ -137,3 +137,21 @@ func TestScanNoDCIMOrClip(t *testing.T) {
 		t.Errorf("files=%v ignored=%v err=%v", files, ignored, err)
 	}
 }
+
+// A7 V shoots HEIF as .HIF; it is a processed (non-RAW) photo like JPEG.
+func TestScanHEIF(t *testing.T) {
+	root := t.TempDir()
+	touch(t, root, "DCIM/100MSDCF/DSC00001.HIF", "DCIM/100MSDCF/DSC00002.heic", "DCIM/100MSDCF/DSC00003.HEIF")
+	files, ignored, err := Scan(root)
+	if err != nil || len(ignored) != 0 {
+		t.Fatalf("ignored=%v err=%v", ignored, err)
+	}
+	for rel, c := range classes(files) {
+		if c != ClassJPEG {
+			t.Errorf("%s class %v, want ClassJPEG", rel, c)
+		}
+	}
+	if len(files) != 3 {
+		t.Errorf("got %d files, want 3", len(files))
+	}
+}

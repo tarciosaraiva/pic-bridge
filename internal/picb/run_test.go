@@ -341,3 +341,14 @@ func TestRunCancelMidGroup(t *testing.T) {
 		t.Errorf("after resume on disk %v, want exactly %v", d, want)
 	}
 }
+
+func TestRunPlanLineSplitsPhotosAndVideos(t *testing.T) {
+	cfg := runCfg(fakeCard(t, happyCard), t)
+	var out bytes.Buffer
+	if _, err := Run(context.Background(), cfg, "wedding", &out); err != nil {
+		t.Fatal(err)
+	}
+	if line, _, _ := strings.Cut(out.String(), "\n"); !strings.HasPrefix(line, "Importing 3 photos, 1 video (") {
+		t.Errorf("plan line = %q", line)
+	}
+}

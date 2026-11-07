@@ -273,3 +273,13 @@ func TestPlanNamesInLocalTime(t *testing.T) {
 	want := "w/original/" + shot.In(time.Local).Format("20060102") + "_0001.ARW"
 	wantDests(t, items, map[string]string{f.Rel: want})
 }
+
+func TestPlanPairsRAWWithHEIF(t *testing.T) {
+	r, h := sf("DCIM/100MSDCF/DSC01234.ARW"), sf("DCIM/100MSDCF/DSC01234.HIF")
+	d := fakeDater(map[string]time.Time{r.Rel: at(9, 0), h.Rel: at(9, 0)})
+	items, _ := BuildPlan([]SourceFile{r, h}, nil, splitCfg, "w", 1, d)
+	wantDests(t, items, map[string]string{
+		r.Rel: "w/original/RAW/20261107_0001.ARW",
+		h.Rel: "w/original/JPEG/20261107_0001.HIF",
+	})
+}

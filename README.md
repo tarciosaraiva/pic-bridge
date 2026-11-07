@@ -38,4 +38,4 @@ make clean   # removes ./picb
 
 ## Supported files
 
-RAW (`.ARW`, `.CR2`, `.CR3`), JPEG, video (`.MP4`, `.MOV`) plus Sony `.XML` sidecars.
+RAW (`.ARW`, `.CR2`, `.CR3`), JPEG, HEIF (`.HIF`, `.HEIF`, `.HEIC`), video (`.MP4`, `.MOV`) plus Sony `.XML` sidecars.
