@@ -43,14 +43,15 @@ type Timing struct {
 
 // SummaryDoc closes a manifest.
 type SummaryDoc struct {
-	Kind       string    `yaml:"kind"`
-	FinishedAt time.Time `yaml:"finished_at"`
-	Copied     int       `yaml:"copied"`
-	Skipped    int       `yaml:"skipped"`
-	Failed     int       `yaml:"failed"`
-	Bytes      int64     `yaml:"bytes"`
-	Workers    int       `yaml:"workers"`
-	Timings    []Timing  `yaml:"timings"`
+	Kind         string    `yaml:"kind"`
+	FinishedAt   time.Time `yaml:"finished_at"`
+	Copied       int       `yaml:"copied"`
+	Skipped      int       `yaml:"skipped"`
+	Failed       int       `yaml:"failed"`
+	NotAttempted int       `yaml:"not_attempted,omitempty"`
+	Bytes        int64     `yaml:"bytes"`
+	Workers      int       `yaml:"workers"`
+	Timings      []Timing  `yaml:"timings"`
 }
 
 // Key identifies a card file from its folder listing alone.
