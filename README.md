@@ -3,7 +3,7 @@
 `picb` imports photos and videos from a camera SD card into a folder you
 name, with date-based file names, verifying every copy and recording a manifest of what was imported.
 
-Status: version 1 in progress. See [the version 1 design](docs/superpowers/specs/2026-11-07-pic-bridge-design.md).
+Status: version 1 released ([v1.0.0](https://github.com/tarciosaraiva/pic-bridge/releases/tag/v1.0.0)). See [the version 1 design](docs/superpowers/specs/2026-11-07-pic-bridge-design.md).
 
 ## Install
 
