@@ -10,7 +10,11 @@ and `docs/superpowers/specs/` for the design.
 - A file is "imported" only after its copy is verified and its manifest entry
   is written.
 - Bottleneck is card I/O, not CPU: keep the copy worker pool small.
-- Deferred features live as GitHub issues labelled `later`.
-  Don't build them into version 1.
+- Deferred work lives as GitHub issues labelled `later`, ranked
+  `priority-zero` / `priority-one` / `priority-two`. Version 1 shipped as
+  v1.0.0; pick `later` issues up in priority order.
+- Releases: release-please keeps a release PR open on `main`; merging it tags
+  `vX.Y.Z` and attaches darwin tarballs. Commit prefixes set the bump
+  (`fix:` patch, `feat:` minor).
 - Prefer the Go standard library. Current deps: imagemeta (EXIF),
   go.yaml.in/yaml/v3 (config + manifest).
