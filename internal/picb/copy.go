@@ -18,8 +18,9 @@ var ErrExists = errors.New("destination exists")
 
 // Test hooks for failure paths a real disk won't produce on demand.
 var (
-	link   = os.Link
-	rehash = hashFile
+	link    = os.Link
+	rehash  = hashFile
+	syncDir = fsyncDir
 )
 
 // CopyStats describes one verified copy. Read is the card→temp copy,
@@ -32,7 +33,7 @@ type CopyStats struct {
 
 // CopyVerify copies src to a hidden .partial next to dst while hashing it,
 // re-hashes the temp (with a no-cache hint; see noCache), sets its mtime, then links it to dst
-// (never overwriting). The temp is removed on every path.
+// (never overwriting) and fsyncs the folder. The temp is removed on every path.
 func CopyVerify(ctx context.Context, src, dst string, modTime time.Time) (st CopyStats, err error) {
 	if _, err := os.Lstat(dst); err == nil {
 		return st, fmt.Errorf("%s: %w", dst, ErrExists) // fail before reading the card
@@ -88,7 +89,21 @@ func CopyVerify(ctx context.Context, src, dst string, modTime time.Time) (st Cop
 		}
 		return st, fmt.Errorf("%s: %w", dst, err)
 	}
+	// Persist the new name: a power cut must not drop a file the manifest calls imported.
+	if err := syncDir(filepath.Dir(dst)); err != nil {
+		return st, fmt.Errorf("%s: sync folder: %w", dst, err)
+	}
 	return st, nil
+}
+
+// fsyncDir flushes a folder's entries (F_FULLFSYNC on macOS via File.Sync).
+func fsyncDir(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	return d.Sync()
 }
 
 func hashFile(p string) (string, error) {

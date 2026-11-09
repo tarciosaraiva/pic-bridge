@@ -161,6 +161,18 @@ func TestCopyVerifyChecksumMismatch(t *testing.T) {
 	noPartials(t, dir)
 }
 
+func TestCopyVerifyDirSyncError(t *testing.T) {
+	src, dir := srcFile(t, []byte("x")), t.TempDir()
+	dst := filepath.Join(dir, "20261107_0001.ARW")
+	orig := syncDir
+	syncDir = func(string) error { return errors.New("sync failed") }
+	t.Cleanup(func() { syncDir = orig })
+	if _, err := CopyVerify(context.Background(), src, dst, shotAt); err == nil || !strings.Contains(err.Error(), dst) {
+		t.Fatalf("err = %v, want error naming dst", err)
+	}
+	noPartials(t, dir)
+}
+
 // Only checks fcntl accepts the flag; not that caching is off.
 func TestNoCacheFcntlAccepted(t *testing.T) {
 	f, err := os.CreateTemp(t.TempDir(), "x")
