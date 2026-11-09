@@ -9,20 +9,41 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"strings"
 
 	"github.com/tarciosaraiva/pic-bridge/internal/picb"
 )
 
+// version is set by release builds with -ldflags "-X main.version=vX.Y.Z".
+var version = ""
+
+// versionString falls back to the module version Go records, which covers
+// `go install .../cmd/picb@vX.Y.Z` and local builds.
+func versionString() string {
+	if version != "" {
+		return version
+	}
+	if bi, ok := debug.ReadBuildInfo(); ok && bi.Main.Version != "" {
+		return bi.Main.Version
+	}
+	return "dev"
+}
+
 func main() { os.Exit(run()) }
 
 func run() int {
 	cfgPath := flag.String("config", "", "config file (default ~/.pic-bridge/config.yaml)")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "usage: picb [--config path] <folder>\n\nImports the card into <destination>/<folder>/original.\n\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
+	if *showVersion {
+		fmt.Println("picb", versionString())
+		return 0
+	}
 	if flag.NArg() < 1 {
 		flag.Usage()
 		return 2
