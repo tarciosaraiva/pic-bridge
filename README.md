@@ -5,6 +5,16 @@ name, with date-based file names, verifying every copy and recording a manifest 
 
 Status: version 1 in progress. See [the version 1 design](docs/superpowers/specs/2026-11-07-pic-bridge-design.md).
 
+## Install
+
+Download the tarball for your Mac (`arm64` for Apple Silicon, `amd64` for
+Intel) from the [latest release](https://github.com/tarciosaraiva/pic-bridge/releases/latest),
+or with Go 1.27+:
+
+```sh
+go install github.com/tarciosaraiva/pic-bridge/cmd/picb@latest
+```
+
 ## Usage
 
 1. Create `~/.pic-bridge/config.yaml` (or run `picb <folder>` once and answer
