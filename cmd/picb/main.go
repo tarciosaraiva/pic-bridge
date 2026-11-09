@@ -23,11 +23,16 @@ func run() int {
 		flag.PrintDefaults()
 	}
 	flag.Parse()
-	if flag.NArg() != 1 {
+	if flag.NArg() < 1 {
 		flag.Usage()
 		return 2
 	}
 	folder := flag.Arg(0)
+	flag.CommandLine.Parse(flag.Args()[1:]) // also accept flags after the folder
+	if flag.NArg() != 0 {
+		flag.Usage()
+		return 2
+	}
 	if err := picb.ValidateFolderName(folder); err != nil {
 		fmt.Fprintln(os.Stderr, "picb:", err)
 		return 2
