@@ -27,6 +27,8 @@ type Summary struct {
 	MtimeFallback   []string
 	ManifestPath    string
 	Timings         []Timing
+	Source          string       // resolved card root
+	Files           []SourceFile // the scan of Source
 }
 
 var volumesDir = "/Volumes"
@@ -63,7 +65,7 @@ func Run(ctx context.Context, cfg Config, folder string, out io.Writer) (Summary
 	if err != nil {
 		return s, err
 	}
-	s.Ignored = ignored
+	s.Source, s.Files, s.Ignored = src, files, ignored
 	s.Timings = append(s.Timings, Timing{Phase: "scan", Seconds: since(t), Note: fmt.Sprintf("%d files", len(files))})
 
 	t = time.Now()
