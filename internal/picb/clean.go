@@ -16,6 +16,15 @@ import (
 // deviceID is a test hook: a temp folder can pose as a mounted card.
 var deviceID = deviceOf
 
+// SetDeviceIDForTest swaps the device lookup so cmd/picb tests can pass a
+// temp folder off as a card. Call restore when done.
+// ponytail: exported test seam; move gate tests to an internal package if more seams pile up.
+func SetDeviceIDForTest(f func(string) (uint64, error)) (restore func()) {
+	old := deviceID
+	deviceID = f
+	return func() { deviceID = old }
+}
+
 // Blocker is one reason the card must not be erased. Path is card-relative
 // for a file, or the card root for a problem with the volume itself.
 type Blocker struct{ Path, Reason string }
