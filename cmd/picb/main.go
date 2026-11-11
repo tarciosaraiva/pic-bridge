@@ -93,7 +93,7 @@ func run() int {
 	if *clean {
 		return cleanCard(ctx, cfg, s, os.Stdin, isTerminal(), os.Stdout)
 	}
-	if len(s.Failed) > 0 || s.NotAttempted > 0 {
+	if len(s.Failed) > 0 || s.NotAttempted > 0 || len(s.ScanErrors) > 0 {
 		return 1
 	}
 	return 0
@@ -106,6 +106,10 @@ func cleanCard(ctx context.Context, cfg picb.Config, s picb.Summary, in io.Reade
 	refuse := func(why string) int {
 		fmt.Fprintln(out, "Not cleaning:", why)
 		return 1
+	}
+	// The gate only checks scanned files: an incomplete scan must never reach it.
+	if len(s.ScanErrors) > 0 {
+		return refuse("the card could not be read completely.")
 	}
 	if len(s.Failed) > 0 || s.NotAttempted > 0 {
 		return refuse("the import did not finish cleanly.")

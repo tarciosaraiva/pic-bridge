@@ -45,7 +45,8 @@ everything matches it asks once, and on `y` erases the card's contents (see
 [the card clean design](docs/superpowers/specs/2026-11-10-card-clean-design.md)).
 
 - Nothing is erased if any file failed to import, is not verified, or is of an
-  unknown type; `picb` lists what blocked it and exits 1.
+  unknown type, or if any card folder or file could not be read during the
+  scan; `picb` lists what blocked it and exits 1.
 - It works on a card imported earlier too: nothing is copied, everything is
   verified, then it asks.
 - macOS and Linux only. Eject the card before removing it.

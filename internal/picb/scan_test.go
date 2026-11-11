@@ -1,6 +1,7 @@
 package picb
 
 import (
+	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
@@ -63,7 +64,7 @@ func TestScanClassifies(t *testing.T) {
 		"PRIVATE/M4ROOT/CLIP/C0001M01.XML",
 		"DCIM/100MSDCF/notes.txt",
 	)
-	files, ignored, err := Scan(root)
+	files, ignored, _, err := Scan(root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +94,7 @@ func TestScanClassifies(t *testing.T) {
 func TestScanSidecarWithoutVideoIgnored(t *testing.T) {
 	root := t.TempDir()
 	touch(t, root, "PRIVATE/M4ROOT/CLIP/C0009M01.XML")
-	files, ignored, err := Scan(root)
+	files, ignored, _, err := Scan(root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +106,7 @@ func TestScanSidecarWithoutVideoIgnored(t *testing.T) {
 func TestScanSkipsHidden(t *testing.T) {
 	root := t.TempDir()
 	touch(t, root, "DCIM/100MSDCF/._DSC00001.ARW")
-	files, ignored, err := Scan(root)
+	files, ignored, _, err := Scan(root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,7 +118,7 @@ func TestScanSkipsHidden(t *testing.T) {
 func TestScanCaseInsensitive(t *testing.T) {
 	root := t.TempDir()
 	touch(t, root, "DCIM/100MSDCF/dsc00003.arw", "PRIVATE/M4ROOT/CLIP/C0002.Mp4", "PRIVATE/M4ROOT/CLIP/c0002m01.xml")
-	files, _, err := Scan(root)
+	files, _, _, err := Scan(root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +133,7 @@ func TestScanCaseInsensitive(t *testing.T) {
 }
 
 func TestScanNoDCIMOrClip(t *testing.T) {
-	files, ignored, err := Scan(t.TempDir())
+	files, ignored, _, err := Scan(t.TempDir())
 	if err != nil || len(files) != 0 || len(ignored) != 0 {
 		t.Errorf("files=%v ignored=%v err=%v", files, ignored, err)
 	}
@@ -142,7 +143,7 @@ func TestScanNoDCIMOrClip(t *testing.T) {
 func TestScanHEIF(t *testing.T) {
 	root := t.TempDir()
 	touch(t, root, "DCIM/100MSDCF/DSC00001.HIF", "DCIM/100MSDCF/DSC00002.heic", "DCIM/100MSDCF/DSC00003.HEIF")
-	files, ignored, err := Scan(root)
+	files, ignored, _, err := Scan(root)
 	if err != nil || len(ignored) != 0 {
 		t.Fatalf("ignored=%v err=%v", ignored, err)
 	}
@@ -153,5 +154,58 @@ func TestScanHEIF(t *testing.T) {
 	}
 	if len(files) != 3 {
 		t.Errorf("got %d files, want 3", len(files))
+	}
+}
+
+// An entry that vanishes mid-walk (ENOENT) must be logged, not mistaken for
+// "this card has no such folder": a short scan would let --clean erase files
+// that were never read.
+func TestScanLogsMidWalkError(t *testing.T) {
+	root := t.TempDir()
+	touch(t, root, "DCIM/100MSDCF/DSC00001.ARW", "DCIM/101MSDCF/DSC00002.ARW")
+	old := walkDir
+	t.Cleanup(func() { walkDir = old })
+	walkDir = func(dir string, fn fs.WalkDirFunc) error {
+		return old(dir, func(p string, d fs.DirEntry, err error) error {
+			if filepath.Base(p) == "100MSDCF" {
+				return fn(p, d, fs.ErrNotExist)
+			}
+			return fn(p, d, err)
+		})
+	}
+	_, _, problems, err := Scan(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(problems) != 1 || !strings.HasPrefix(problems[0], "DCIM/100MSDCF: ") {
+		t.Fatalf("problems = %v, want one for DCIM/100MSDCF", problems)
+	}
+}
+
+func TestScanUnreadableFolderContinues(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("root ignores folder permissions")
+	}
+	root := t.TempDir()
+	touch(t, root, "DCIM/100MSDCF/DSC00001.ARW", "DCIM/101MSDCF/DSC00002.ARW")
+	locked := filepath.Join(root, "DCIM", "100MSDCF")
+	os.Chmod(locked, 0)
+	t.Cleanup(func() { os.Chmod(locked, 0o755) })
+	files, _, problems, err := Scan(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 1 || files[0].Rel != "DCIM/101MSDCF/DSC00002.ARW" {
+		t.Errorf("files = %+v, want only the readable folder's file", files)
+	}
+	if len(problems) != 1 || !strings.HasPrefix(problems[0], "DCIM/100MSDCF: ") {
+		t.Fatalf("problems = %v, want one for DCIM/100MSDCF", problems)
+	}
+}
+
+func TestScanMissingFoldersAreNotProblems(t *testing.T) {
+	files, _, problems, err := Scan(t.TempDir())
+	if err != nil || len(files) != 0 || len(problems) != 0 {
+		t.Fatalf("files %v problems %v err %v; want nothing", files, problems, err)
 	}
 }

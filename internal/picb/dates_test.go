@@ -128,7 +128,7 @@ func TestCaptureDateEXIFSample(t *testing.T) {
 	if dir == "" {
 		t.Skip("PICB_SAMPLE_DIR not set")
 	}
-	files, _, err := Scan(dir)
+	files, _, _, err := Scan(dir)
 	if err != nil {
 		t.Fatal(err)
 	}

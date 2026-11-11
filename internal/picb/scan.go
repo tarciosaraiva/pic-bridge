@@ -63,15 +63,27 @@ func FindCardRoot(volumesDir string) (string, error) {
 	return "", fmt.Errorf("several camera cards found (%s); set source in the config", strings.Join(cards, ", "))
 }
 
+// walkDir is a test hook for entries that fail mid-walk.
+var walkDir = filepath.WalkDir
+
 // Scan lists importable files under root, sorted by Rel. Unknown files and
 // sidecars without a video are returned in ignored; hidden files are skipped.
-func Scan(root string) (files []SourceFile, ignored []string, err error) {
+// An entry that cannot be read does not stop the scan: it lands in problems
+// as "<rel>: <error>", and the files list is then incomplete (the card must
+// not be cleaned from it).
+func Scan(root string) (files []SourceFile, ignored, problems []string, err error) {
 	videos := map[string]bool{} // upper-cased dir/base of every video
 	var xmls []SourceFile
 	for _, d := range scanDirs {
-		err := filepath.WalkDir(filepath.Join(root, filepath.FromSlash(d)), func(p string, e fs.DirEntry, err error) error {
+		top := filepath.Join(root, filepath.FromSlash(d))
+		err := walkDir(top, func(p string, e fs.DirEntry, err error) error {
 			if err != nil {
-				return err
+				// Only a missing scan folder is normal (a photo-only card has no CLIP).
+				if p != top || !errors.Is(err, fs.ErrNotExist) {
+					rel, _ := filepath.Rel(root, p)
+					problems = append(problems, filepath.ToSlash(rel)+": "+err.Error())
+				}
+				return nil
 			}
 			if strings.HasPrefix(e.Name(), ".") {
 				if e.IsDir() {
@@ -95,7 +107,8 @@ func Scan(root string) (files []SourceFile, ignored []string, err error) {
 			}
 			fi, err := e.Info()
 			if err != nil {
-				return err
+				problems = append(problems, rel+": "+err.Error())
+				return nil
 			}
 			f := SourceFile{Rel: rel, Abs: p, Size: fi.Size(), ModTime: fi.ModTime(), Class: cls}
 			if ext == ".XML" {
@@ -109,8 +122,8 @@ func Scan(root string) (files []SourceFile, ignored []string, err error) {
 			files = append(files, f)
 			return nil
 		})
-		if err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return nil, nil, err
+		if err != nil {
+			return nil, nil, nil, err
 		}
 	}
 	// Sony sidecar: C0001M01.XML belongs to C0001.MP4 in the same folder.
@@ -124,5 +137,6 @@ func Scan(root string) (files []SourceFile, ignored []string, err error) {
 	}
 	sort.Slice(files, func(i, j int) bool { return files[i].Rel < files[j].Rel })
 	sort.Strings(ignored)
-	return files, ignored, nil
+	sort.Strings(problems)
+	return files, ignored, problems, nil
 }

@@ -141,7 +141,7 @@ func TestCheckCleanCardFileChanged(t *testing.T) {
 	p := filepath.Join(s.Source, filepath.FromSlash(firstRel))
 	os.WriteFile(p, []byte("shot again, longer"), 0o644)
 	os.Chtimes(p, at(15, 0), at(15, 0))
-	files, ignored, err := Scan(s.Source)
+	files, ignored, _, err := Scan(s.Source)
 	if err != nil {
 		t.Fatal(err)
 	}

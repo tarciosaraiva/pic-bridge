@@ -188,3 +188,12 @@ func TestCleanCardEraseFailure(t *testing.T) {
 		t.Fatalf("exit %d, output %q", code, out.String())
 	}
 }
+
+func TestCleanCardRefusesAfterScanError(t *testing.T) {
+	cfg, s := importedCard(t)
+	s.ScanErrors = []string{"DCIM/101MSDCF: permission denied"}
+	var out bytes.Buffer
+	code := cleanCard(context.Background(), cfg, s, strings.NewReader("y\n"), true, &out)
+	wantRefused(t, code, out.String(), "Not cleaning: the card could not be read completely.")
+	wantIntact(t, s.Source)
+}

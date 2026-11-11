@@ -62,6 +62,10 @@ With `--clean`:
    below does the second read for every file).
 2. If the import had any failed or not-attempted file, or was stopped with
    Ctrl-C: print "Not cleaning: …", exit 1. No gate, no prompt.
+   Same if the scan could not read a card folder or file: the scan carries
+   on, lists each one in the run output and in the manifest summary
+   (`scan_errors`), and the run exits 1 with or without `--clean`. The gate
+   only checks scanned files, so an incomplete scan must never reach it.
 3. Gate runs (see below), printing progress like the copy does.
 4. Gate fails: print "Not cleaning the card:" and every blocking file with its
    reason. Exit 1. Card untouched.

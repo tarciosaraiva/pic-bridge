@@ -51,6 +51,7 @@ type SummaryDoc struct {
 	NotAttempted int       `yaml:"not_attempted,omitempty"`
 	Bytes        int64     `yaml:"bytes"`
 	Workers      int       `yaml:"workers"`
+	ScanErrors   []string  `yaml:"scan_errors,omitempty"`
 	Timings      []Timing  `yaml:"timings"`
 }
 
