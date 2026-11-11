@@ -100,12 +100,7 @@ func EraseCard(root string) []string {
 			continue
 		}
 		p := filepath.Join(root, e.Name())
-		err := os.RemoveAll(p)
-		if err != nil { // a read-only file on the card; see unlock
-			unlock(p)
-			err = os.RemoveAll(p)
-		}
-		if err != nil {
+		if err := os.RemoveAll(p); err != nil {
 			fails = append(fails, fmt.Sprintf("%s: %v", p, err))
 		}
 	}
