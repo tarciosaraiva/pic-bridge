@@ -111,7 +111,10 @@ func EraseCard(root string) []string {
 // it must be a mounted volume with a DCIM folder, and must not hold the
 // destination. Empty means no problem.
 func volumeProblem(cfg Config, src string) (string, error) {
-	if filepath.Clean(src) == "/" {
+	// "/Volumes/CARD/" would otherwise be its own parent below, and Lstat
+	// follows a symlink that has a trailing slash.
+	src = filepath.Clean(src)
+	if src == "/" {
 		return "is the filesystem root", nil
 	}
 	// A symlink to a folder on another disk would pass the device check below.

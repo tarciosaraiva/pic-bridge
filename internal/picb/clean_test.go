@@ -109,6 +109,42 @@ func TestCheckCleanSymlinkSource(t *testing.T) {
 	wantBlockers(t, gate(t, cfg, link, s.Files, s.Ignored), Blocker{link, "not a mounted volume"})
 }
 
+func TestCheckCleanSourceTrailingSlash(t *testing.T) {
+	cfg, s := importedCard(t)
+	wantBlockers(t, gate(t, cfg, s.Source+string(filepath.Separator), s.Files, s.Ignored))
+}
+
+// extraEntry writes one more manifest (sorting before the import's) with an
+// entry for the same card file as s.Files[0].
+func extraEntry(t *testing.T, cfg Config, f SourceFile, sha, dest string) {
+	t.Helper()
+	m, err := CreateManifest(filepath.Join(cfg.Destination, ".pic-bridge", "manifests"), RunHeader{StartedAt: runStart})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Append(FileEntry{Source: f.Rel, Size: f.Size, Modified: f.ModTime, Destination: dest, SHA256: sha}); err != nil {
+		t.Fatal(err)
+	}
+	m.Close()
+}
+
+// After a re-import one card file has several entries: it passes when any
+// one of them matches the card and its destination.
+func TestCheckCleanAnyEntryPasses(t *testing.T) {
+	cfg, s := importedCard(t)
+	f := s.Files[0]
+	sum, err := hashFile(f.Abs)
+	if err != nil || f.Rel != firstRel {
+		t.Fatal(f.Rel, err)
+	}
+	extraEntry(t, cfg, f, "stale", "wedding/original/gone.ARW")
+	extraEntry(t, cfg, f, sum, "wedding/original/gone.ARW")
+	wantBlockers(t, gate(t, cfg, s.Source, s.Files, s.Ignored))
+
+	os.Remove(filepath.Join(cfg.Destination, filepath.FromSlash(firstDest)))
+	wantBlockers(t, gate(t, cfg, s.Source, s.Files, s.Ignored), Blocker{firstRel, "destination " + firstDest + " missing"})
+}
+
 func TestCheckCleanNoDCIM(t *testing.T) {
 	card := t.TempDir()
 	cfg := runCfg(card, t)
