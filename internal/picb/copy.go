@@ -44,6 +44,11 @@ func CopyVerify(ctx context.Context, src, dst string, modTime time.Time, verifyS
 		return st, err
 	}
 	defer in.Close()
+	// Keep the card's bytes out of the page cache: a later re-read of src
+	// (verifySrc, the clean gate) must come from the card, not from memory.
+	if err := noCache(in); err != nil {
+		return st, err
+	}
 
 	// Unique temp per call: two copies to one dst never share a temp.
 	out, err := os.CreateTemp(filepath.Dir(dst), "."+filepath.Base(dst)+".*.partial")
