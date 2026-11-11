@@ -27,6 +27,9 @@ type Summary struct {
 	MtimeFallback   []string
 	ManifestPath    string
 	Timings         []Timing
+	Source          string       // resolved card root
+	Files           []SourceFile // the scan of Source
+	ScanErrors      []string     // "<rel>: <error>" for card entries the scan could not read; Files is incomplete when set
 }
 
 var volumesDir = "/Volumes"
@@ -59,11 +62,11 @@ func Run(ctx context.Context, cfg Config, folder string, out io.Writer) (Summary
 	}
 
 	t := time.Now()
-	files, ignored, err := Scan(src)
+	files, ignored, scanErrs, err := Scan(src)
 	if err != nil {
 		return s, err
 	}
-	s.Ignored = ignored
+	s.Source, s.Files, s.Ignored, s.ScanErrors = src, files, ignored, scanErrs
 	s.Timings = append(s.Timings, Timing{Phase: "scan", Seconds: since(t), Note: fmt.Sprintf("%d files", len(files))})
 
 	t = time.Now()
@@ -139,7 +142,7 @@ func Run(ctx context.Context, cfg Config, folder string, out io.Writer) (Summary
 		Timing{Phase: "total", Seconds: since(start)})
 
 	err = m.Finish(SummaryDoc{FinishedAt: time.Now(), Copied: s.Copied, Skipped: s.Skipped, Failed: len(s.Failed), NotAttempted: s.NotAttempted,
-		Bytes: s.Bytes, Workers: cfg.Workers, Timings: s.Timings})
+		Bytes: s.Bytes, Workers: cfg.Workers, ScanErrors: s.ScanErrors, Timings: s.Timings})
 	printSummary(out, s)
 	return s, err
 }
@@ -159,7 +162,7 @@ func copyGroups(ctx context.Context, cfg Config, m *Manifest, groups [][]Item, n
 				var failErr error
 				cctx := ctx
 				for _, it := range g {
-					st, err := CopyVerify(cctx, it.Src.Abs, filepath.Join(cfg.Destination, filepath.FromSlash(it.DestRel)), it.Src.ModTime)
+					st, err := CopyVerify(cctx, it.Src.Abs, filepath.Join(cfg.Destination, filepath.FromSlash(it.DestRel)), it.Src.ModTime, cfg.VerifySource)
 					mu.Lock()
 					read += st.Read
 					verify += st.Verify
@@ -254,6 +257,16 @@ func printSummary(out io.Writer, s Summary) {
 	}
 	for _, rel := range slices.Sorted(maps.Keys(s.Failed)) {
 		fmt.Fprintf(out, "  FAILED %s: %s\n", rel, s.Failed[rel])
+	}
+	if n := len(s.ScanErrors); n > 0 {
+		noun := "entries"
+		if n == 1 {
+			noun = "entry"
+		}
+		fmt.Fprintf(out, "Could not read %d card %s; nothing under it was imported:\n", n, noun)
+		for _, e := range s.ScanErrors {
+			fmt.Fprintf(out, "  %s\n", e)
+		}
 	}
 	if len(s.Ignored) > 0 {
 		fmt.Fprintf(out, "Ignored %d unknown files: %s\n", len(s.Ignored), strings.Join(s.Ignored, ", "))

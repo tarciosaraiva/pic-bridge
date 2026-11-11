@@ -39,7 +39,7 @@ func TestCopyVerifyOK(t *testing.T) {
 	rand.Read(data)
 	src, dir := srcFile(t, data), t.TempDir()
 	dst := filepath.Join(dir, "20261107_0001.ARW")
-	st, err := CopyVerify(context.Background(), src, dst, shotAt)
+	st, err := CopyVerify(context.Background(), src, dst, shotAt, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestCopyVerifyRefusesExisting(t *testing.T) {
 	src, dir := srcFile(t, []byte("new")), t.TempDir()
 	dst := filepath.Join(dir, "20261107_0001.ARW")
 	os.WriteFile(dst, []byte("keep"), 0o644)
-	if _, err := CopyVerify(context.Background(), src, dst, shotAt); !errors.Is(err, ErrExists) {
+	if _, err := CopyVerify(context.Background(), src, dst, shotAt, false); !errors.Is(err, ErrExists) {
 		t.Fatalf("err = %v, want ErrExists", err)
 	}
 	if got, _ := os.ReadFile(dst); string(got) != "keep" {
@@ -75,7 +75,7 @@ func TestCopyVerifyIgnoresStalePartial(t *testing.T) {
 	dst := filepath.Join(dir, "20261107_0001.ARW")
 	stale := filepath.Join(dir, ".20261107_0001.ARW.partial")
 	os.WriteFile(stale, []byte("stale from a crash"), 0o644)
-	if _, err := CopyVerify(context.Background(), src, dst, shotAt); err != nil {
+	if _, err := CopyVerify(context.Background(), src, dst, shotAt, false); err != nil {
 		t.Fatal(err)
 	}
 	if got, _ := os.ReadFile(dst); string(got) != "fresh" {
@@ -96,7 +96,7 @@ func TestCopyVerifyConcurrentSameDst(t *testing.T) {
 		dst := filepath.Join(dir, "20261107_0001.ARW")
 		errs := make(chan error, 2)
 		for _, s := range []string{srcA, srcB} {
-			go func() { _, err := CopyVerify(context.Background(), s, dst, shotAt); errs <- err }()
+			go func() { _, err := CopyVerify(context.Background(), s, dst, shotAt, false); errs <- err }()
 		}
 		e1, e2 := <-errs, <-errs
 		if (e1 == nil) == (e2 == nil) || !(errors.Is(e1, ErrExists) || errors.Is(e2, ErrExists)) {
@@ -121,7 +121,7 @@ func TestCopyVerifyLinkError(t *testing.T) {
 	src, dir := srcFile(t, []byte("x")), t.TempDir()
 	dst := filepath.Join(dir, "20261107_0001.ARW")
 	withLink(t, func(string, string) error { return errors.New("operation not supported") })
-	_, err := CopyVerify(context.Background(), src, dst, shotAt)
+	_, err := CopyVerify(context.Background(), src, dst, shotAt, false)
 	if err == nil || errors.Is(err, ErrExists) || !strings.Contains(err.Error(), dst) {
 		t.Fatalf("err = %v, want non-ErrExists error naming dst", err)
 	}
@@ -135,7 +135,7 @@ func TestCopyVerifyDstAppearsBeforeLink(t *testing.T) {
 		os.WriteFile(n, []byte("keep"), 0o644) // another writer wins the race
 		return os.Link(o, n)
 	})
-	_, err := CopyVerify(context.Background(), src, dst, shotAt)
+	_, err := CopyVerify(context.Background(), src, dst, shotAt, false)
 	if !errors.Is(err, ErrExists) || !strings.Contains(err.Error(), dst) {
 		t.Fatalf("err = %v, want ErrExists naming dst", err)
 	}
@@ -151,7 +151,7 @@ func TestCopyVerifyChecksumMismatch(t *testing.T) {
 	orig := rehash
 	rehash = func(string) (string, error) { return "deadbeef", nil } // disk returned other bytes
 	t.Cleanup(func() { rehash = orig })
-	_, err := CopyVerify(context.Background(), src, dst, shotAt)
+	_, err := CopyVerify(context.Background(), src, dst, shotAt, false)
 	if err == nil || !strings.Contains(err.Error(), "checksum mismatch") || !strings.Contains(err.Error(), dst) {
 		t.Fatalf("err = %v, want checksum mismatch naming dst", err)
 	}
@@ -167,7 +167,7 @@ func TestCopyVerifyDirSyncError(t *testing.T) {
 	orig := syncDir
 	syncDir = func(string) error { return errors.New("sync failed") }
 	t.Cleanup(func() { syncDir = orig })
-	if _, err := CopyVerify(context.Background(), src, dst, shotAt); err == nil || !strings.Contains(err.Error(), dst) {
+	if _, err := CopyVerify(context.Background(), src, dst, shotAt, false); err == nil || !strings.Contains(err.Error(), dst) {
 		t.Fatalf("err = %v, want error naming dst", err)
 	}
 	noPartials(t, dir)
@@ -188,7 +188,7 @@ func TestNoCacheFcntlAccepted(t *testing.T) {
 func TestCopyVerifySourceError(t *testing.T) {
 	dir := t.TempDir()
 	dst := filepath.Join(dir, "20261107_0001.ARW")
-	if _, err := CopyVerify(context.Background(), filepath.Join(dir, "missing"), dst, shotAt); err == nil {
+	if _, err := CopyVerify(context.Background(), filepath.Join(dir, "missing"), dst, shotAt, false); err == nil {
 		t.Fatal("want error for missing source")
 	}
 	if _, err := os.Stat(dst); err == nil {
@@ -202,11 +202,53 @@ func TestCopyVerifyCancelled(t *testing.T) {
 	dst := filepath.Join(dir, "20261107_0001.ARW")
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := CopyVerify(ctx, src, dst, shotAt); err == nil {
+	if _, err := CopyVerify(ctx, src, dst, shotAt, false); err == nil {
 		t.Fatal("want error on cancelled context")
 	}
 	if _, err := os.Stat(dst); err == nil {
 		t.Error("dst created")
 	}
 	noPartials(t, dir)
+}
+
+// badCardReread makes every re-read of src return a wrong hash and counts them.
+func badCardReread(t *testing.T, src string) *int {
+	t.Helper()
+	n := 0
+	old := rehash
+	t.Cleanup(func() { rehash = old })
+	rehash = func(p string) (string, error) {
+		if p == src {
+			n++
+			return "bad", nil
+		}
+		return old(p)
+	}
+	return &n
+}
+
+func TestCopyVerifySourceRereadMismatch(t *testing.T) {
+	src := srcFile(t, []byte("card bytes"))
+	dst := filepath.Join(t.TempDir(), "out.ARW")
+	badCardReread(t, src)
+	_, err := CopyVerify(context.Background(), src, dst, time.Now(), true)
+	if err == nil || !strings.Contains(err.Error(), "card re-read mismatch") {
+		t.Fatalf("err = %v", err)
+	}
+	if _, err := os.Lstat(dst); err == nil {
+		t.Fatal("dst placed despite mismatch")
+	}
+	noPartials(t, filepath.Dir(dst))
+}
+
+func TestCopyVerifySourceRereadOff(t *testing.T) {
+	src := srcFile(t, []byte("card bytes"))
+	dst := filepath.Join(t.TempDir(), "out.ARW")
+	n := badCardReread(t, src)
+	if _, err := CopyVerify(context.Background(), src, dst, time.Now(), false); err != nil {
+		t.Fatal(err)
+	}
+	if *n != 0 {
+		t.Fatalf("card re-read %d times with verifySrc off", *n)
+	}
 }

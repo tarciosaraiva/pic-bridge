@@ -35,13 +35,13 @@ recording exactly what was imported.
 
 ## Non-goals (version 1) — tracked as issues
 
-- Wiping the card (#1).
+- Wiping the card (#1). Done: see 2026-11-10-card-clean-design.md.
 - The interactive re-import flow (already-imported card → continue/stop/wipe
   prompts) (#2). The basic skip of already-imported files IS in v1 (see
   "Skipping already-imported files").
 - Comparing run settings with the previous run (#3). The manifest stores the
   config snapshot now so this needs no format change later.
-- Double-reading the source to catch bad card reads (`verify_source`) (#4).
+- Double-reading the source to catch bad card reads (`verify_source`) (#4). Done: see 2026-11-10-card-clean-design.md.
 - Auto-running on card insert. The tool is run by hand in a terminal.
 - Windows/Linux card auto-detection. Target is macOS; code should not go out of
   its way to block other platforms.

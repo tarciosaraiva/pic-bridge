@@ -352,3 +352,31 @@ func TestRunPlanLineSplitsPhotosAndVideos(t *testing.T) {
 		t.Errorf("plan line = %q", line)
 	}
 }
+
+// A folder the scan could not read: the rest is imported, the problem is
+// printed and recorded in the manifest.
+func TestRunReportsScanErrors(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("root ignores folder permissions")
+	}
+	card := fakeCard(t, happyCard)
+	locked := filepath.Join(card, "DCIM", "100MSDCF")
+	os.Chmod(locked, 0)
+	t.Cleanup(func() { os.Chmod(locked, 0o755) })
+	cfg := runCfg(card, t)
+	var out bytes.Buffer
+	s, err := Run(context.Background(), cfg, "wedding", &out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Copied != 2 || len(s.ScanErrors) != 1 || !strings.HasPrefix(s.ScanErrors[0], "DCIM/100MSDCF: ") {
+		t.Fatalf("copied %d, scan errors %v; want 2 and one for DCIM/100MSDCF", s.Copied, s.ScanErrors)
+	}
+	if !strings.Contains(out.String(), "Could not read 1 card entry; nothing under it was imported:\n  DCIM/100MSDCF: ") {
+		t.Errorf("output = %q", out.String())
+	}
+	docs := manifestDocs(t, cfg.Destination)
+	if logged, _ := docs[len(docs)-1]["scan_errors"].([]any); len(logged) != 1 {
+		t.Errorf("summary doc = %v, want 1 scan_errors entry", docs[len(docs)-1])
+	}
+}

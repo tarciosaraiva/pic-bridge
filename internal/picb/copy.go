@@ -16,6 +16,12 @@ import (
 // ErrExists means the destination name is taken; nothing was overwritten.
 var ErrExists = errors.New("destination exists")
 
+// ioBuf is the read size for copies and hashes. With the no-cache hint macOS
+// does no read-ahead, so each read is its own trip to the device: at Go's
+// default 32 KB a card read fell to about 20 MB/s. Tune here if a card or
+// reader wants larger requests.
+const ioBuf = 1 << 20
+
 // Test hooks for failure paths a real disk won't produce on demand.
 var (
 	link    = os.Link
@@ -34,7 +40,8 @@ type CopyStats struct {
 // CopyVerify copies src to a hidden .partial next to dst while hashing it,
 // re-hashes the temp (with a no-cache hint; see noCache), sets its mtime, then links it to dst
 // (never overwriting) and fsyncs the folder. The temp is removed on every path.
-func CopyVerify(ctx context.Context, src, dst string, modTime time.Time) (st CopyStats, err error) {
+// With verifySrc the card file is read a second time and must hash the same.
+func CopyVerify(ctx context.Context, src, dst string, modTime time.Time, verifySrc bool) (st CopyStats, err error) {
 	if _, err := os.Lstat(dst); err == nil {
 		return st, fmt.Errorf("%s: %w", dst, ErrExists) // fail before reading the card
 	}
@@ -43,6 +50,11 @@ func CopyVerify(ctx context.Context, src, dst string, modTime time.Time) (st Cop
 		return st, err
 	}
 	defer in.Close()
+	// Keep the card's bytes out of the page cache: a later re-read of src
+	// (verifySrc, the clean gate) must come from the card, not from memory.
+	if err := noCache(in); err != nil {
+		return st, err
+	}
 
 	// Unique temp per call: two copies to one dst never share a temp.
 	out, err := os.CreateTemp(filepath.Dir(dst), "."+filepath.Base(dst)+".*.partial")
@@ -58,7 +70,7 @@ func CopyVerify(ctx context.Context, src, dst string, modTime time.Time) (st Cop
 
 	t0 := time.Now()
 	h := sha256.New()
-	if st.Bytes, err = io.Copy(io.MultiWriter(out, h), ctxReader{ctx, in}); err != nil {
+	if st.Bytes, err = io.CopyBuffer(io.MultiWriter(out, h), ctxReader{ctx, in}, make([]byte, ioBuf)); err != nil {
 		return st, err
 	}
 	st.Read = time.Since(t0)
@@ -77,6 +89,15 @@ func CopyVerify(ctx context.Context, src, dst string, modTime time.Time) (st Cop
 	}
 	if again != st.SHA256 {
 		return st, fmt.Errorf("%s: checksum mismatch after copy", dst)
+	}
+	if verifySrc {
+		card, err := rehash(src)
+		if err != nil {
+			return st, err
+		}
+		if card != st.SHA256 {
+			return st, fmt.Errorf("%s: card re-read mismatch", src)
+		}
 	}
 	st.Verify = time.Since(t0)
 
@@ -116,7 +137,8 @@ func hashFile(p string) (string, error) {
 		return "", err
 	}
 	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
+	// struct{ io.Reader } hides *os.File's WriteTo, which would ignore the buffer.
+	if _, err := io.CopyBuffer(h, struct{ io.Reader }{f}, make([]byte, ioBuf)); err != nil {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
