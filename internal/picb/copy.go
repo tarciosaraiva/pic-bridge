@@ -16,6 +16,12 @@ import (
 // ErrExists means the destination name is taken; nothing was overwritten.
 var ErrExists = errors.New("destination exists")
 
+// ioBuf is the read size for copies and hashes. With the no-cache hint macOS
+// does no read-ahead, so each read is its own trip to the device: at Go's
+// default 32 KB a card read fell to about 20 MB/s. Tune here if a card or
+// reader wants larger requests.
+const ioBuf = 1 << 20
+
 // Test hooks for failure paths a real disk won't produce on demand.
 var (
 	link    = os.Link
@@ -64,7 +70,7 @@ func CopyVerify(ctx context.Context, src, dst string, modTime time.Time, verifyS
 
 	t0 := time.Now()
 	h := sha256.New()
-	if st.Bytes, err = io.Copy(io.MultiWriter(out, h), ctxReader{ctx, in}); err != nil {
+	if st.Bytes, err = io.CopyBuffer(io.MultiWriter(out, h), ctxReader{ctx, in}, make([]byte, ioBuf)); err != nil {
 		return st, err
 	}
 	st.Read = time.Since(t0)
@@ -131,7 +137,8 @@ func hashFile(p string) (string, error) {
 		return "", err
 	}
 	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
+	// struct{ io.Reader } hides *os.File's WriteTo, which would ignore the buffer.
+	if _, err := io.CopyBuffer(h, struct{ io.Reader }{f}, make([]byte, ioBuf)); err != nil {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
