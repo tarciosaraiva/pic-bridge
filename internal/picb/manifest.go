@@ -103,7 +103,7 @@ func (m *Manifest) Path() string { return m.f.Name() }
 
 // Append records a group of files in one write + fsync. Call it only after
 // every copy is verified and in place at its final name: LoadImported treats
-// every entry as imported, and re-runs (and the future card wipe) skip those
+// every entry as imported, and re-runs (and the clean gate) skip those
 // files. Safe for concurrent use.
 func (m *Manifest) Append(es ...FileEntry) error {
 	docs := make([]any, len(es))
