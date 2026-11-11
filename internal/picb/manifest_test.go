@@ -130,6 +130,24 @@ func TestLoadImportedMultipleManifests(t *testing.T) {
 	}
 }
 
+func TestLoadEntriesKeepsShaAndDuplicates(t *testing.T) {
+	dir := t.TempDir()
+	for _, sha := range []string{"aaa", "bbb"} {
+		m := newManifest(t, dir)
+		e := entry("DCIM/A.ARW", 10)
+		e.SHA256, e.Destination = sha, "w/original/"+sha+".ARW"
+		if err := m.Append(e); err != nil {
+			t.Fatal(err)
+		}
+		m.Close()
+	}
+	got, err := LoadEntries(dir)
+	es := got[Key{Source: "DCIM/A.ARW", Size: 10, ModUnix: entry("DCIM/A.ARW", 10).Modified.Unix()}]
+	if err != nil || len(es) != 2 || es[0].SHA256 == es[1].SHA256 || es[0].Destination == "" {
+		t.Fatalf("got %+v, %v", es, err)
+	}
+}
+
 func TestLoadImportedMissingDir(t *testing.T) {
 	got, err := LoadImported(filepath.Join(t.TempDir(), "nope"))
 	if err != nil || len(got) != 0 {

@@ -149,9 +149,23 @@ func (m *Manifest) write(vs ...any) error {
 }
 
 // LoadImported returns the Key of every file entry in every manifest in dir.
-// A broken trailing document (crash mid-write) is dropped; earlier ones count.
 func LoadImported(dir string) (map[Key]bool, error) {
-	keys := map[Key]bool{}
+	entries, err := LoadEntries(dir)
+	if err != nil {
+		return nil, err
+	}
+	keys := make(map[Key]bool, len(entries))
+	for k := range entries {
+		keys[k] = true
+	}
+	return keys, nil
+}
+
+// LoadEntries returns every file entry in every manifest in dir, grouped by
+// Key (one card file can have several after a re-import).
+// A broken trailing document (crash mid-write) is dropped; earlier ones count.
+func LoadEntries(dir string) (map[Key][]FileEntry, error) {
+	entries := map[Key][]FileEntry{}
 	paths, err := filepath.Glob(filepath.Join(dir, "*.yaml"))
 	if err != nil {
 		return nil, err
@@ -168,10 +182,11 @@ func LoadImported(dir string) (map[Key]bool, error) {
 				break // io.EOF, or the broken tail of a crashed run
 			}
 			if e.Kind == "file" {
-				keys[Key{Source: e.Source, Size: e.Size, ModUnix: e.Modified.Unix()}] = true
+				k := Key{Source: e.Source, Size: e.Size, ModUnix: e.Modified.Unix()}
+				entries[k] = append(entries[k], e)
 			}
 		}
 		f.Close()
 	}
-	return keys, nil
+	return entries, nil
 }
