@@ -49,6 +49,10 @@ everything matches it asks once, and on `y` erases the card's contents (see
   scan; `picb` lists what blocked it and exits 1.
 - It works on a card imported earlier too: nothing is copied, everything is
   verified, then it asks.
+- Known limit: macOS will not delete files the camera marked read-only
+  (Sony's `PRIVATE/SONY/SONYCARD.IND`). `picb` erases everything else, lists
+  them under `Could not remove:` and exits 1. No photo is lost; the camera
+  rewrites or reuses the file.
 - macOS and Linux only. Eject the card before removing it.
 
 ## Build and test
