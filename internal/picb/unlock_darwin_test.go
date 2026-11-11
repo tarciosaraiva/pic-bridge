@@ -7,8 +7,6 @@ import (
 	"testing"
 )
 
-const ufImmutable = 0x2 // UF_IMMUTABLE, shown as uchg by ls -lO
-
 // Sony marks PRIVATE/SONY/SONYCARD.IND read-only on the card; macOS shows
 // that as the uchg flag, and unlink then fails with "operation not permitted".
 func TestEraseCardClearsImmutableFlag(t *testing.T) {
