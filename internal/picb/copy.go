@@ -34,7 +34,8 @@ type CopyStats struct {
 // CopyVerify copies src to a hidden .partial next to dst while hashing it,
 // re-hashes the temp (with a no-cache hint; see noCache), sets its mtime, then links it to dst
 // (never overwriting) and fsyncs the folder. The temp is removed on every path.
-func CopyVerify(ctx context.Context, src, dst string, modTime time.Time) (st CopyStats, err error) {
+// With verifySrc the card file is read a second time and must hash the same.
+func CopyVerify(ctx context.Context, src, dst string, modTime time.Time, verifySrc bool) (st CopyStats, err error) {
 	if _, err := os.Lstat(dst); err == nil {
 		return st, fmt.Errorf("%s: %w", dst, ErrExists) // fail before reading the card
 	}
@@ -77,6 +78,15 @@ func CopyVerify(ctx context.Context, src, dst string, modTime time.Time) (st Cop
 	}
 	if again != st.SHA256 {
 		return st, fmt.Errorf("%s: checksum mismatch after copy", dst)
+	}
+	if verifySrc {
+		card, err := rehash(src)
+		if err != nil {
+			return st, err
+		}
+		if card != st.SHA256 {
+			return st, fmt.Errorf("%s: card re-read mismatch", src)
+		}
 	}
 	st.Verify = time.Since(t0)
 

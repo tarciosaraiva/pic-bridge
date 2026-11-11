@@ -159,7 +159,7 @@ func copyGroups(ctx context.Context, cfg Config, m *Manifest, groups [][]Item, n
 				var failErr error
 				cctx := ctx
 				for _, it := range g {
-					st, err := CopyVerify(cctx, it.Src.Abs, filepath.Join(cfg.Destination, filepath.FromSlash(it.DestRel)), it.Src.ModTime)
+					st, err := CopyVerify(cctx, it.Src.Abs, filepath.Join(cfg.Destination, filepath.FromSlash(it.DestRel)), it.Src.ModTime, cfg.VerifySource)
 					mu.Lock()
 					read += st.Read
 					verify += st.Verify

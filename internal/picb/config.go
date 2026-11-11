@@ -24,6 +24,7 @@ type Config struct {
 	UseEXIF      bool   `yaml:"use_exif"`
 	SplitRawJPEG bool   `yaml:"split_raw_jpeg"`
 	Workers      int    `yaml:"workers"`
+	VerifySource bool   `yaml:"verify_source"`
 }
 
 // ErrNoConfig is returned (wrapped) when the config file does not exist.
@@ -37,6 +38,7 @@ include_time: false           # default false; true adds _HHmmss to FILE names o
 use_exif: true                # default true; false = use file modified time
 split_raw_jpeg: false         # default false; true = RAW/ and JPEG/ subfolders
 workers: 2                    # parallel copies; 2 saturated a USB card reader
+verify_source: false          # default false; true reads each card file twice (slower, catches bad card reads)
 `
 
 const timeLayout = "150405"

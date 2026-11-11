@@ -197,3 +197,14 @@ func TestWriteSampleConfig(t *testing.T) {
 		t.Errorf("config overwritten: %q", got)
 	}
 }
+
+func TestLoadConfigVerifySource(t *testing.T) {
+	cfg, err := LoadConfig(writeConfig(t, "destination: /tmp/x\n"))
+	if err != nil || cfg.VerifySource {
+		t.Fatalf("default: %v %v", cfg.VerifySource, err)
+	}
+	cfg, err = LoadConfig(writeConfig(t, "destination: /tmp/x\nverify_source: true\n"))
+	if err != nil || !cfg.VerifySource {
+		t.Fatalf("explicit: %v %v", cfg.VerifySource, err)
+	}
+}
