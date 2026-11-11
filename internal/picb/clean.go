@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 )
 
@@ -73,6 +74,28 @@ feed:
 	}
 	sort.Slice(blockers, func(i, j int) bool { return blockers[i].Path < blockers[j].Path })
 	return blockers, nil
+}
+
+// EraseCard removes everything in root except root-level dot-entries
+// (.Trashes, .Spotlight-V100: the OS owns them, the camera ignores them).
+// It keeps going after an error and returns "<path>: <error>" for each entry
+// it could not remove. Call it only after CheckClean returned no blockers.
+func EraseCard(root string) []string {
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return []string{fmt.Sprintf("%s: %v", root, err)}
+	}
+	var fails []string
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), ".") {
+			continue
+		}
+		p := filepath.Join(root, e.Name())
+		if err := os.RemoveAll(p); err != nil {
+			fails = append(fails, fmt.Sprintf("%s: %v", p, err))
+		}
+	}
+	return fails
 }
 
 // volumeProblem says why src is not a camera card that is safe to erase:

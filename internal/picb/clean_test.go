@@ -177,6 +177,48 @@ func TestCheckCleanDestEdited(t *testing.T) {
 	wantBlockers(t, gate(t, cfg, s.Source, s.Files, s.Ignored), Blocker{firstRel, "destination " + firstDest + " does not match the manifest"})
 }
 
+func TestEraseCard(t *testing.T) {
+	root := fakeCard(t, happyCard)
+	os.WriteFile(filepath.Join(root, "DCIM", ".hidden"), nil, 0o644)
+	os.Mkdir(filepath.Join(root, ".Trashes"), 0o755)
+	if fails := EraseCard(root); fails != nil {
+		t.Fatal(fails)
+	}
+	ents, _ := os.ReadDir(root)
+	if len(ents) != 1 || ents[0].Name() != ".Trashes" {
+		t.Fatalf("left %v", ents)
+	}
+}
+
+func TestEraseCardKeepsGoing(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("root ignores folder permissions")
+	}
+	root := t.TempDir()
+	for _, rel := range []string{"A/locked.txt", "B/y", "DCIM/x"} {
+		p := filepath.Join(root, filepath.FromSlash(rel))
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, nil, 0o644)
+	}
+	a := filepath.Join(root, "A")
+	os.Chmod(a, 0o555)
+	t.Cleanup(func() { os.Chmod(a, 0o755) })
+	fails := EraseCard(root)
+	if len(fails) != 1 || !strings.HasPrefix(fails[0], a) {
+		t.Fatalf("fails = %v, want one naming %s", fails, a)
+	}
+	ents, _ := os.ReadDir(root)
+	if len(ents) != 1 || ents[0].Name() != "A" {
+		t.Fatalf("left %v, want only A", ents)
+	}
+}
+
+func TestEraseCardUnreadableRoot(t *testing.T) {
+	if fails := EraseCard(filepath.Join(t.TempDir(), "gone")); len(fails) != 1 {
+		t.Fatalf("fails = %v, want the read error", fails)
+	}
+}
+
 func TestCheckCleanCancelled(t *testing.T) {
 	cfg, s := importedCard(t)
 	ctx, cancel := context.WithCancel(context.Background())
