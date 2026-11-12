@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.1.0](https://github.com/tarciosaraiva/pic-bridge/compare/v1.0.0...v1.1.0) (2026-11-11)
+
+
+### Features
+
+* --clean verifies and erases the card after import ([2e0dba4](https://github.com/tarciosaraiva/pic-bridge/commit/2e0dba4426dc3fc5e015863f35abb57b0ba3f8bf))
+* --clean verifies and erases the card after import ([3976bb9](https://github.com/tarciosaraiva/pic-bridge/commit/3976bb92a958e76ad3cdc2528ac7d4eff73353c8))
+* clean gate re-verifies every card file ([c89b3d9](https://github.com/tarciosaraiva/pic-bridge/commit/c89b3d90250d83cb9fc2e1dcd839370f8575f72b))
+* erase card contents after a passed gate ([991de46](https://github.com/tarciosaraiva/pic-bridge/commit/991de46ff58c155a068b30d04381de3c7c637046))
+* load full manifest entries for the clean gate ([d986b61](https://github.com/tarciosaraiva/pic-bridge/commit/d986b613772f4e6334ecdf2278a14519e5f83c05))
+* verify_source re-reads each card file before placing it ([49a1081](https://github.com/tarciosaraiva/pic-bridge/commit/49a1081a8f49639bff66e91afdf528de228697ce))
+
+
+### Bug Fixes
+
+* --clean accepts a source with a trailing slash ([61cd037](https://github.com/tarciosaraiva/pic-bridge/commit/61cd0375615c2eb650aeb29650819513b53f94cb))
+* --clean removes read-only card files on macOS ([341f42b](https://github.com/tarciosaraiva/pic-bridge/commit/341f42bdb90b7fd54eb74517b2759edb3b99dd35))
+* clear only the uchg flag before removing a card file ([7ea3a03](https://github.com/tarciosaraiva/pic-bridge/commit/7ea3a037130fabee349f906009a32533168a9e8d))
+* keep the first card read out of the page cache ([134ea77](https://github.com/tarciosaraiva/pic-bridge/commit/134ea77f77b658d7340937f96326a115a74acfda))
+* read the card in 1 MB requests ([409780c](https://github.com/tarciosaraiva/pic-bridge/commit/409780cf906bf554a7279cae06ebf292f78b0df0))
+* scan logs unreadable card entries and blocks --clean ([858aa1c](https://github.com/tarciosaraiva/pic-bridge/commit/858aa1c74a353a5e874019243d6b6daf80ffe91f))
+
+
+### Reverts
+
+* flag clearing before removing a card file ([84cf226](https://github.com/tarciosaraiva/pic-bridge/commit/84cf226c54b7e09272425e406be0aa84bfc10d76))
+
 ## 1.0.0 (2026-11-09)
 
 
