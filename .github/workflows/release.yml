@@ -35,7 +35,7 @@ jobs:
           mkdir dist
           for arch in arm64 amd64; do
             GOOS=darwin GOARCH=$arch go build -trimpath -ldflags "-s -w -X main.version=$TAG" -o picb ./cmd/picb
-            tar -czf "dist/picb_${TAG#v}_darwin_$arch.tar.gz" picb
+            tar -czf "dist/picb_${TAG#v}_darwin_$arch.tar.gz" picb LICENSE
           done
           (cd dist && shasum -a 256 *.tar.gz > checksums.txt)
           gh release upload "$TAG" dist/*

@@ -68,3 +68,7 @@ make clean   # removes ./picb
 ## Supported files
 
 RAW (`.ARW`, `.CR2`, `.CR3`), JPEG, HEIF (`.HIF`, `.HEIF`, `.HEIC`), video (`.MP4`, `.MOV`) plus Sony `.XML` sidecars.
+
+## License
+
+Copyright 2026 Tarcio Saraiva. Licensed under the [Apache License 2.0](LICENSE).
