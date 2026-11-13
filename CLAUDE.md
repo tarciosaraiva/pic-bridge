@@ -19,6 +19,6 @@ and `docs/superpowers/specs/` for the design.
 - Prefer the Go standard library. Current deps: imagemeta (EXIF),
   go.yaml.in/yaml/v3 (config + manifest).
 - Open a PR, always. Worktrees are not really necessary unless parallellising the work.
-- Create an issue for a new feature if not there yet. Every PR must have at least one.
+- Always check for an issue related to the ask. Create one if not there yet. Every PR must have at least one.
 - If changing an existing feature follow the RED-GREEN testing pattern.
 - Try to use design patterns (https://refactoring.guru/design-patterns/go) whenever you can. Keep the files small.
