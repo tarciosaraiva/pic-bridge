@@ -57,6 +57,11 @@ func Run(ctx context.Context, cfg Config, folder string, out io.Writer) (Summary
 			return s, err
 		}
 	}
+	unlock, err := lockDest(cfg.Destination)
+	if err != nil {
+		return s, err
+	}
+	defer unlock()
 	if err := removePartials(origDir); err != nil {
 		return s, err
 	}
