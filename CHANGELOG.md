@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/tarciosaraiva/pic-bridge/compare/v1.1.0...v1.1.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* lock destination against concurrent runs ([8dd35db](https://github.com/tarciosaraiva/pic-bridge/commit/8dd35dbc62721c2c54e90e54b968f7788e409f8d))
+* lock destination against concurrent runs ([c859ea7](https://github.com/tarciosaraiva/pic-bridge/commit/c859ea72b1110b5059b35857c8aa4444bb3f0657))
+
 ## [1.1.0](https://github.com/tarciosaraiva/pic-bridge/compare/v1.0.0...v1.1.0) (2026-11-11)
 
 
