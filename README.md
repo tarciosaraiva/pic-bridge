@@ -28,6 +28,9 @@ go install github.com/tarciosaraiva/pic-bridge/cmd/picb@latest
    split_raw_jpeg: false
    workers: 2
    verify_source: false   # true reads each card file twice (slower, catches bad card reads)
+   # archive_targets:     # only for --archive, see "Archiving a folder"
+   #   - auto
+   #   - /Volumes/Backup/photos
    ```
 
 2. Insert the card and run `picb <folder-name>`, e.g. `picb wedding`
@@ -82,6 +85,10 @@ card (see [the archive design](docs/superpowers/specs/2026-11-14-archive-design.
   holds files the local folder does not. `picb` lists the failed targets and
   exits 1. Run it again: files already archived are skipped.
 - A file that already exists on a target is never changed.
+- `.DS_Store` and `._*` files (macOS metadata) are not archived, and the check
+  ignores them on the target. ExFAT and FAT drives work: macOS writes `._*`
+  files there, and file times within 2 seconds count as equal. File contents
+  are still compared in full.
 - Clean the card before archiving its folder: `--clean` checks the
   destination copy, so it fails once the folder is gone.
 - Targets must be absolute local paths. Network shares and cloud remotes are
