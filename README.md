@@ -85,10 +85,18 @@ card (see [the archive design](docs/superpowers/specs/2026-11-14-archive-design.
   holds files the local folder does not. `picb` lists the failed targets and
   exits 1. Run it again: files already archived are skipped.
 - A file that already exists on a target is never changed.
-- `.DS_Store` and `._*` files (macOS metadata) are not archived, and the check
-  ignores them on the target. ExFAT and FAT drives work: macOS writes `._*`
-  files there, and file times within 2 seconds count as equal. File contents
-  are still compared in full.
+- `.DS_Store` files (Finder metadata) are not archived, and the check ignores
+  them on the drive.
+- ExFAT and FAT drives work, with two adjustments:
+  - These filesystems can't store macOS extended attributes, so macOS
+    writes them as hidden `._<name>` files. `picb` doesn't archive them,
+    and the check ignores them on the drive.
+  - They store file times less precisely (ExFAT to 10 ms, FAT to 2 s),
+    so a re-run would see every file as changed. Times within 2 seconds
+    count as equal.
+
+  Neither weakens the check: `rclone check` reads every file in full on
+  both sides and compares checksums.
 - Clean the card before archiving its folder: `--clean` checks the
   destination copy, so it fails once the folder is gone.
 - Targets must be absolute local paths. Network shares and cloud remotes are
