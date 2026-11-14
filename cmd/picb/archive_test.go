@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"os"
@@ -189,5 +190,27 @@ func TestArchiveSetupErrors(t *testing.T) {
 	var buf bytes.Buffer
 	if code := archiveFolder(context.Background(), cfg, "nope", strings.NewReader(""), true, false, &buf); code != 1 {
 		t.Errorf("missing folder: code %d\n%s", code, buf.String())
+	}
+}
+
+func TestPickDrive(t *testing.T) {
+	one := []string{"/Volumes/A/pic-bridge"}
+	two := []string{"/Volumes/A/pic-bridge", "/Volumes/B/pic-bridge"}
+	for _, c := range []struct {
+		drives []string
+		answer string
+		want   string
+	}{
+		{one, "y\n", one[0]},
+		{one, "\n", ""},
+		{two, "2\n", two[1]},
+		{two, "\n", ""},
+		{two, "3\n", ""},
+		{two, "x\n", ""},
+	} {
+		var out bytes.Buffer
+		if got := pickDrive(c.drives, bufio.NewReader(strings.NewReader(c.answer)), &out); got != c.want {
+			t.Errorf("%d drives, answer %q: got %q, want %q", len(c.drives), c.answer, got, c.want)
+		}
 	}
 }

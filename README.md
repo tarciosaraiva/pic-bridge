@@ -66,8 +66,13 @@ card (see [the archive design](docs/superpowers/specs/2026-11-14-archive-design.
 
    ```yaml
    archive_targets:
+     - auto                  # a plugged-in external hard drive, confirmed each run
      - /Volumes/Backup/photos
    ```
+
+   `auto` (macOS only) offers each plugged-in external hard drive, never an
+   SD card or the Mac's own disk, and archives to `/Volumes/<Name>/pic-bridge`
+   after you confirm.
 
 3. Run `picb --archive wedding`. Each target gets `<target>/wedding`, copied
    with `rclone copy --immutable` and checked with `rclone check`. If every
