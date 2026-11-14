@@ -117,7 +117,10 @@ func (a *Archive) Copy(ctx context.Context, out io.Writer, progress bool) []Targ
 	// ExFAT/FAT drives.
 	// --config "": local paths need no rclone config; skips its "not found"
 	// notice. ponytail: drop when remote targets land (#53).
-	common := []string{"--config", "", "--exclude", ".DS_Store", "--exclude", "._*"}
+	// --modify-window 2s: ExFAT keeps times to 10ms and FAT to 2s, so a
+	// re-run would see every file as modified. Content is still compared
+	// by rclone check.
+	common := []string{"--config", "", "--modify-window", "2s", "--exclude", ".DS_Store", "--exclude", "._*"}
 	if progress {
 		common = append(common, "--progress")
 	}

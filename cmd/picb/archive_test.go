@@ -224,5 +224,8 @@ func TestArchiveExcludesMacMetadata(t *testing.T) {
 		if !strings.Contains(line, "--exclude ._*") || !strings.Contains(line, "--exclude .DS_Store") {
 			t.Errorf("rclone call without metadata excludes: %s", line)
 		}
+		if !strings.Contains(line, "--modify-window 2s") {
+			t.Errorf("rclone call without --modify-window 2s: %s", line)
+		}
 	}
 }
