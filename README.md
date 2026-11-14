@@ -55,6 +55,33 @@ everything matches it asks once, and on `y` erases the card's contents (see
   rewrites or reuses the file.
 - macOS and Linux only. Eject the card before removing it.
 
+### Archiving a folder
+
+`picb --archive <folder-name>` moves a finished folder (`original/` and
+`processed/`) off the Mac to an external drive. It does not import and needs no
+card (see [the archive design](docs/superpowers/specs/2026-11-14-archive-design.md)).
+
+1. Install [rclone](https://rclone.org): `brew install rclone`.
+2. Add targets to the config:
+
+   ```yaml
+   archive_targets:
+     - /Volumes/Backup/photos
+   ```
+
+3. Run `picb --archive wedding`. Each target gets `<target>/wedding`, copied
+   with `rclone copy --immutable` and checked with `rclone check`. If every
+   target passes, `picb` asks once and on `y` deletes the local folder.
+
+- Nothing is deleted if a target is missing, fails its copy or its check, or
+  holds files the local folder does not. `picb` lists the failed targets and
+  exits 1. Run it again: files already archived are skipped.
+- A file that already exists on a target is never changed.
+- Clean the card before archiving its folder: `--clean` checks the
+  destination copy, so it fails once the folder is gone.
+- Targets must be absolute local paths. Network shares and cloud remotes are
+  not supported yet (#53).
+
 ## Build and test
 
 Needs Go 1.27+.
