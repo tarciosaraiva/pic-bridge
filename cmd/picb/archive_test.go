@@ -214,3 +214,15 @@ func TestPickDrive(t *testing.T) {
 		}
 	}
 }
+
+func TestArchiveExcludesMacMetadata(t *testing.T) {
+	log := fakeRclone(t)
+	cfg := shoot(t, t.TempDir())
+	archive(cfg, "n\n", true)
+	calls, _ := os.ReadFile(log)
+	for _, line := range strings.Split(strings.TrimSpace(string(calls)), "\n") {
+		if !strings.Contains(line, "--exclude ._*") || !strings.Contains(line, "--exclude .DS_Store") {
+			t.Errorf("rclone call without metadata excludes: %s", line)
+		}
+	}
+}

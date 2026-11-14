@@ -112,10 +112,12 @@ func within(p, base string) bool {
 // an empty result.
 func (a *Archive) Copy(ctx context.Context, out io.Writer, progress bool) []TargetFailure {
 	// .DS_Store: Finder writes one into a target folder that someone opens,
-	// which would fail the next check for no real reason.
+	// which would fail the next check for no real reason. ._*: macOS stores
+	// extended attributes (com.apple.provenance) as AppleDouble files on
+	// ExFAT/FAT drives.
 	// --config "": local paths need no rclone config; skips its "not found"
 	// notice. ponytail: drop when remote targets land (#53).
-	common := []string{"--config", "", "--exclude", ".DS_Store"}
+	common := []string{"--config", "", "--exclude", ".DS_Store", "--exclude", "._*"}
 	if progress {
 		common = append(common, "--progress")
 	}
