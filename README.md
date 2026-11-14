@@ -28,6 +28,9 @@ go install github.com/tarciosaraiva/pic-bridge/cmd/picb@latest
    split_raw_jpeg: false
    workers: 2
    verify_source: false   # true reads each card file twice (slower, catches bad card reads)
+   # archive_targets:     # only for --archive, see "Archiving a folder"
+   #   - auto
+   #   - /Volumes/Backup/photos
    ```
 
 2. Insert the card and run `picb <folder-name>`, e.g. `picb wedding`
@@ -54,6 +57,50 @@ everything matches it asks once, and on `y` erases the card's contents (see
   them under `Could not remove:` and exits 1. No photo is lost; the camera
   rewrites or reuses the file.
 - macOS and Linux only. Eject the card before removing it.
+
+### Archiving a folder
+
+`picb --archive <folder-name>` moves a finished folder (`original/` and
+`processed/`) off the Mac to an external drive. It does not import and needs no
+card (see [the archive design](docs/superpowers/specs/2026-11-14-archive-design.md)).
+
+1. Install [rclone](https://rclone.org): `brew install rclone`.
+2. Add targets to the config:
+
+   ```yaml
+   archive_targets:
+     - auto                  # a plugged-in external hard drive, confirmed each run
+     - /Volumes/Backup/photos
+   ```
+
+   `auto` (macOS only) offers each plugged-in external hard drive, never an
+   SD card or the Mac's own disk, and archives to `/Volumes/<Name>/pic-bridge`
+   after you confirm.
+
+3. Run `picb --archive wedding`. Each target gets `<target>/wedding`, copied
+   with `rclone copy --immutable` and checked with `rclone check`. If every
+   target passes, `picb` asks once and on `y` deletes the local folder.
+
+- Nothing is deleted if a target is missing, fails its copy or its check, or
+  holds files the local folder does not. `picb` lists the failed targets and
+  exits 1. Run it again: files already archived are skipped.
+- A file that already exists on a target is never changed.
+- `.DS_Store` files (Finder metadata) are not archived, and the check ignores
+  them on the drive.
+- ExFAT and FAT drives work, with two adjustments:
+  - These filesystems can't store macOS extended attributes, so macOS
+    writes them as hidden `._<name>` files. `picb` doesn't archive them,
+    and the check ignores them on the drive.
+  - They store file times less precisely (ExFAT to 10 ms, FAT to 2 s),
+    so a re-run would see every file as changed. Times within 2 seconds
+    count as equal.
+
+  Neither weakens the check: `rclone check` reads every file in full on
+  both sides and compares checksums.
+- Clean the card before archiving its folder: `--clean` checks the
+  destination copy, so it fails once the folder is gone.
+- Targets must be absolute local paths. Network shares and cloud remotes are
+  not supported yet (#53).
 
 ## Build and test
 

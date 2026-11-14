@@ -42,6 +42,8 @@ recording exactly what was imported.
 - Comparing run settings with the previous run (#3). The manifest stores the
   config snapshot now so this needs no format change later.
 - Double-reading the source to catch bad card reads (`verify_source`) (#4). Done: see 2026-11-10-card-clean-design.md.
+- Archiving a finished folder to an external drive (#52). See
+  2026-11-14-archive-design.md.
 - Auto-running on card insert. The tool is run by hand in a terminal.
 - Windows/Linux card auto-detection. Target is macOS; code should not go out of
   its way to block other platforms.

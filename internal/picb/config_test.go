@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -206,5 +207,23 @@ func TestLoadConfigVerifySource(t *testing.T) {
 	cfg, err = LoadConfig(writeConfig(t, "destination: /tmp/x\nverify_source: true\n"))
 	if err != nil || !cfg.VerifySource {
 		t.Fatalf("explicit: %v %v", cfg.VerifySource, err)
+	}
+}
+
+func TestLoadConfigArchiveTargets(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	cfg, err := LoadConfig(writeConfig(t, "destination: /tmp/x\narchive_targets:\n  - auto\n  - ~/Backup\n  - /Volumes/Backup/photos/\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"auto", filepath.Join(home, "Backup"), "/Volumes/Backup/photos"}
+	if !slices.Equal(cfg.ArchiveTargets, want) {
+		t.Errorf("ArchiveTargets = %q, want %q", cfg.ArchiveTargets, want)
+	}
+	for _, bad := range []string{"rel/dir", "b2:photos", `""`} {
+		if _, err := LoadConfig(writeConfig(t, "destination: /tmp/x\narchive_targets: ["+bad+"]\n")); err == nil {
+			t.Errorf("archive_targets %s: want error", bad)
+		}
 	}
 }

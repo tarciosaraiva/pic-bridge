@@ -35,9 +35,10 @@ func main() { os.Exit(run()) }
 func run() int {
 	cfgPath := flag.String("config", "", "config file (default ~/.pic-bridge/config.yaml)")
 	clean := flag.Bool("clean", false, "after the import, re-verify every card file and offer to erase the card")
+	archive := flag.String("archive", "", "copy `folder` to every archive target, check it, then offer to delete it (no import)")
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: picb [--config path] [--clean] <folder>\n\nImports the card into <destination>/<folder>/original.\n\n")
+		fmt.Fprintf(os.Stderr, "usage: picb [--config path] [--clean] <folder>\n       picb [--config path] --archive <folder>\n\nImports the card into <destination>/<folder>/original, or archives <destination>/<folder>.\n\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -45,19 +46,27 @@ func run() int {
 		fmt.Println("picb", versionString())
 		return 0
 	}
-	if flag.NArg() < 1 {
-		flag.Usage()
-		return 2
-	}
-	folder := flag.Arg(0)
-	flag.CommandLine.Parse(flag.Args()[1:]) // also accept flags after the folder
-	if flag.NArg() != 0 {
-		flag.Usage()
-		return 2
-	}
-	if err := picb.ValidateFolderName(folder); err != nil {
-		fmt.Fprintln(os.Stderr, "picb:", err)
-		return 2
+	folder := *archive
+	if folder != "" {
+		if *clean || flag.NArg() != 0 {
+			flag.Usage()
+			return 2
+		}
+	} else {
+		if flag.NArg() < 1 {
+			flag.Usage()
+			return 2
+		}
+		folder = flag.Arg(0)
+		flag.CommandLine.Parse(flag.Args()[1:]) // also accept flags after the folder
+		if flag.NArg() != 0 || *archive != "" {
+			flag.Usage()
+			return 2
+		}
+		if err := picb.ValidateFolderName(folder); err != nil {
+			fmt.Fprintln(os.Stderr, "picb:", err)
+			return 2
+		}
 	}
 
 	path := *cfgPath
@@ -77,13 +86,16 @@ func run() int {
 		return 1
 	}
 
-	if *clean {
-		cfg.VerifySource = false // the clean gate does the second card read
-	}
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 	go func() { <-ctx.Done(); stop() }() // first Ctrl-C stops cleanly; a second one kills (e.g. a hung card read)
+	if *archive != "" {
+		return archiveFolder(ctx, cfg, folder, os.Stdin, isTerminal(), isCharDevice(os.Stdout), os.Stdout)
+	}
+
+	if *clean {
+		cfg.VerifySource = false // the clean gate does the second card read
+	}
 	s, err := picb.Run(ctx, cfg, folder, os.Stdout)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "picb:", err)
@@ -98,8 +110,10 @@ func run() int {
 	return 0
 }
 
-func isTerminal() bool {
-	fi, err := os.Stdin.Stat()
+func isTerminal() bool { return isCharDevice(os.Stdin) }
+
+func isCharDevice(f *os.File) bool {
+	fi, err := f.Stat()
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }
 

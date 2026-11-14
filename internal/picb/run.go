@@ -235,15 +235,22 @@ func groupItems(items []Item) [][]Item {
 // removePartials deletes crash leftovers (.*.partial) in original/ and its
 // RAW/, JPEG/, VIDEO/ subfolders.
 func removePartials(origDir string) error {
-	for _, sub := range []string{"", "RAW", "JPEG", "VIDEO"} {
-		ps, _ := filepath.Glob(filepath.Join(origDir, sub, ".*.partial"))
-		for _, p := range ps {
-			if err := os.Remove(p); err != nil {
-				return err
-			}
+	for _, p := range partials(origDir) {
+		if err := os.Remove(p); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+// partials lists the .*.partial files in original/ and its subfolders.
+func partials(origDir string) []string {
+	var ps []string
+	for _, sub := range []string{"", "RAW", "JPEG", "VIDEO"} {
+		m, _ := filepath.Glob(filepath.Join(origDir, sub, ".*.partial"))
+		ps = append(ps, m...)
+	}
+	return ps
 }
 
 func plural(n int, word string) string {
