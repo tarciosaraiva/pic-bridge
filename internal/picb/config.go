@@ -25,6 +25,8 @@ type Config struct {
 	SplitRawJPEG bool   `yaml:"split_raw_jpeg"`
 	Workers      int    `yaml:"workers"`
 	VerifySource bool   `yaml:"verify_source"`
+	// ArchiveTargets are absolute folders or "auto" (an external drive).
+	ArchiveTargets []string `yaml:"archive_targets"`
 }
 
 // ErrNoConfig is returned (wrapped) when the config file does not exist.
@@ -39,6 +41,9 @@ use_exif: true                # default true; false = use file modified time
 split_raw_jpeg: false         # default false; true = RAW/ and JPEG/ subfolders
 workers: 2                    # parallel copies; 2 saturated a USB card reader
 verify_source: false          # default false; true reads each card file twice (slower, catches bad card reads)
+# archive_targets:            # needed for --archive (rclone required)
+#   - auto                    # a plugged-in external hard drive, confirmed each run (macOS)
+#   - /Volumes/Backup/photos
 `
 
 const timeLayout = "150405"
@@ -122,6 +127,19 @@ func LoadConfig(path string) (Config, error) {
 	}
 	if cfg.Destination, err = filepath.Abs(cfg.Destination); err != nil {
 		return cfg, err
+	}
+	for i, t := range cfg.ArchiveTargets {
+		if t == "auto" {
+			continue
+		}
+		if t, err = expandHome(t); err != nil {
+			return cfg, err
+		}
+		// ponytail: rclone remotes ("b2:photos") are rejected until #53.
+		if !filepath.IsAbs(t) {
+			return cfg, fmt.Errorf("config: archive target %q must be auto or an absolute path", cfg.ArchiveTargets[i])
+		}
+		cfg.ArchiveTargets[i] = filepath.Clean(t)
 	}
 	return cfg, nil
 }
