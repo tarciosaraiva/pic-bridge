@@ -15,6 +15,7 @@ func TestParseDiskInfo(t *testing.T) {
 	for file, want := range map[string]bool{
 		"usb-hard-drive.plist":       true,
 		"sd-card-builtin-slot.plist": false,
+		"sd-card-usb-reader.plist":   false,
 		"macintosh-hd.plist":         false, // real output, nested dicts
 	} {
 		f, err := os.Open(filepath.Join("testdata", "diskutil", file))
