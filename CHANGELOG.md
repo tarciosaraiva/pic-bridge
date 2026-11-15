@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/tarciosaraiva/pic-bridge/compare/v1.1.1...v1.2.0) (2026-11-15)
+
+
+### Features
+
+* archive a folder to an external drive with rclone ([#54](https://github.com/tarciosaraiva/pic-bridge/issues/54)) ([ee008c3](https://github.com/tarciosaraiva/pic-bridge/commit/ee008c3a2313b8522a18557acb9ef0337f0a7433))
+
 ## [1.1.1](https://github.com/tarciosaraiva/pic-bridge/compare/v1.1.0...v1.1.1) (2026-11-13)
 
 
