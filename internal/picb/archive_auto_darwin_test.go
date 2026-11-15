@@ -1,10 +1,11 @@
+//go:build darwin
+
 package picb
 
 import (
 	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -39,9 +40,6 @@ func TestParseDiskInfo(t *testing.T) {
 }
 
 func TestArchiveDrives(t *testing.T) {
-	if runtime.GOOS != "darwin" {
-		t.Skip("macOS only")
-	}
 	vols := t.TempDir()
 	for _, v := range []string{"Backup", "Second", "Card", "Macintosh HD", "Share", "SameAsDest"} {
 		os.Mkdir(filepath.Join(vols, v), 0o755)
