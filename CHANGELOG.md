@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/tarciosaraiva/pic-bridge/compare/v1.2.0...v1.3.0) (2026-11-18)
+
+
+### Features
+
+* documentation site with VitePress on GitHub Pages ([#62](https://github.com/tarciosaraiva/pic-bridge/issues/62)) ([e418b89](https://github.com/tarciosaraiva/pic-bridge/commit/e418b8904c8f70dab0281a3f0282b13e448a7036))
+
 ## [1.2.0](https://github.com/tarciosaraiva/pic-bridge/compare/v1.1.1...v1.2.0) (2026-11-15)
 
 
