@@ -3,6 +3,7 @@ package picb
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -65,10 +66,19 @@ type Key struct {
 // KeyOf is f's Key (modified time at second precision).
 func KeyOf(f SourceFile) Key { return Key{Source: f.Rel, Size: f.Size, ModUnix: f.ModTime.Unix()} }
 
+type manifestFile interface {
+	Write([]byte) (int, error)
+	Sync() error
+	Close() error
+	Name() string
+}
+
 // Manifest is an append-only YAML document stream, synced after every document.
+// The first write or sync error prevents further writes.
 type Manifest struct {
-	mu sync.Mutex
-	f  *os.File
+	mu  sync.Mutex
+	f   manifestFile
+	err error
 }
 
 // CreateManifest makes <dir>/<YYYYMMDD_HHmmss>.yaml (never reusing a name) and writes h.
@@ -133,6 +143,11 @@ func (m *Manifest) Close() error {
 }
 
 func (m *Manifest) write(vs ...any) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.err != nil {
+		return m.err
+	}
 	var buf []byte
 	for _, v := range vs {
 		b, err := yaml.Marshal(v)
@@ -141,12 +156,16 @@ func (m *Manifest) write(vs ...any) error {
 		}
 		buf = append(append(buf, "---\n"...), b...)
 	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if _, err := m.f.Write(buf); err != nil {
+	n, err := m.f.Write(buf)
+	if err == nil && n < len(buf) {
+		err = io.ErrShortWrite
+	}
+	if err != nil {
+		m.err = err
 		return err
 	}
-	return m.f.Sync()
+	m.err = m.f.Sync()
+	return m.err
 }
 
 // LoadImported returns the Key of every file entry in every manifest in dir.
